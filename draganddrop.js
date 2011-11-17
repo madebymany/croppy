@@ -112,7 +112,9 @@
 
 		canvas.width = width;
 		canvas.height = height;
-		canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+		
+		var ctx = canvas.getContext('2d')
+		ctx.drawImage(img, 0, 0, width, height);
 
 		// probably delete this bit, it just displays the canvas as the preview
 		var li = document.createElement("li");
@@ -125,10 +127,34 @@
 		
 		return {
 			img : canvas,
-			dataUrl : canvas.toDataURL("image/png")
+			dataUrl : canvas.toDataURL("image/png"),
+			imageData : ctx.getImageData(0, 0, width, height) 
 		};
 		
 	}
+	
+	/*
+	function dataURItoBlob(dataURI, callback) {
+	    // convert base64 to raw binary data held in a string
+	    // doesn't handle URLEncoded DataURIs - see SO answer #6850276 for code that does this
+	    var byteString = atob(dataURI.split(',')[1]),
+	
+	    		// separate out the mime component
+					mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0],
+
+	    		// write the bytes of the string to an ArrayBuffer
+	    		ab = new ArrayBuffer(byteString.length),
+	    		ia = new Uint8Array(ab);
+	
+	    for (var i = 0, f; f = ia[i]; i++) {
+	        f = byteString.charCodeAt(i);
+	    }
+
+	    // write the ArrayBuffer to a blob, and you're done
+	    var bb = new BlobBuilder();
+	    bb.append(ab);
+	    return bb.getBlob(mimeString);
+	}*/
 	
 	
 })(document);
