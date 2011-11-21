@@ -42,7 +42,7 @@ fieldset li {
 	display:inline;
 }
 
-#previewList li {
+#preview {
 	text-align:center;
 	margin-bottom:15px;
 }
@@ -51,6 +51,15 @@ fieldset li {
 	background:green;
 }
 
+canvas {
+	position:relative;
+	border:1px solid #000;
+	cursor:move;
+}
+
+canvas:active {
+	cursor:move;
+}
 
 [draggable] {
   -moz-user-select: none;

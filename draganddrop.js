@@ -1,8 +1,6 @@
 (function(document){
 	
-	// change these values
-	var dropZone = document.getElementById('dropzone'),
-			previewList = document.getElementById("previewList");
+	var dropZone = document.querySelector('#dropzone');
 
 	// Setup the dnd listeners.
 	dropZone.addEventListener('dragenter', handleDragEnter, false);
@@ -30,14 +28,14 @@
 	//
 	// ======
 	
-	var maxWidth = document.getElementById("maxWidth"),
-			maxHeight = document.getElementById("maxHeight"),
-			urlAPI = (typeof URL !== "undefined") ? URL : (typeof webkitURL !== "undefined") ? webkitURL : null,
+	var urlAPI = (typeof URL !== "undefined") ? URL : (typeof webkitURL !== "undefined") ? webkitURL : null,
 			prepareImageFromFile = function() {}, imageFromFileCallback = function() {};
 	
 	// callback for the drop eventlistener
 	function handleFileSelect(e) {
-
+		
+		this.classList.remove('over');
+		
 	  e.stopPropagation(); // Stops some browsers (I'm looking at you FF!) from redirecting.
 		e.preventDefault();
 
@@ -58,7 +56,7 @@
 
 		imageFromFileCallback = function() {
 			urlAPI.revokeObjectURL(this.src);
-			scaleImage(this);
+			new CroppingTool(this);
 		};
 
 		prepareImageFromFile = function(f) {
@@ -78,7 +76,7 @@
 		};
 
 		imageFromFileCallback = function () {
-			scaleImage(this);
+			new CroppingTool(this);
 		};
 
 		prepareImageFromFile = function(f) {
@@ -87,51 +85,6 @@
 	} else {
 		throw "Browser does not support createObjectUrl or fileReader - cannot continue";
 	}
-
-	function scaleImage(img) {
-		
-		var canvas = document.createElement('canvas'),
-				width = img.width,
-				height = img.height,
-				
-				// if you are not using fields for the width and height, remove the value attribute and set maxWidth and maxHeight to absolutes
-		    scale = Math.min(
-		      (maxWidth.value || width) / width,
-		      (maxHeight.value || height) / height
-		    );
-
-		scale = (scale > 1) ? 1 : scale;
-		
-		width = img.width = parseInt(width * scale, 10);
-		height = img.height = parseInt(height * scale, 10);
-		
-		/* Test for whether canvas is supported?
-		if (!Modernizr.canvas || typeof canvas.getContext !== "function") {
-	    return { img : img };
-		}*/
-
-		canvas.width = width;
-		canvas.height = height;
-		
-		var ctx = canvas.getContext('2d')
-		ctx.drawImage(img, 0, 0, width, height);
-
-		// probably delete this bit, it just displays the canvas as the preview
-		var li = document.createElement("li");
-		li.appendChild(canvas);
-		previewList.appendChild(li);
-		li = null;
-
-		// returns the canvas dom object for the preview
-		// also returns the dataurl to send to the server
-		
-		return {
-			img : canvas,
-			dataUrl : canvas.toDataURL("image/png"),
-			imageData : ctx.getImageData(0, 0, width, height) 
-		};
-		
-	}
 	
 	/*
 	function dataURItoBlob(dataURI, callback) {
@@ -139,12 +92,12 @@
 	    // doesn't handle URLEncoded DataURIs - see SO answer #6850276 for code that does this
 	    var byteString = atob(dataURI.split(',')[1]),
 	
-	    		// separate out the mime component
+					// separate out the mime component
 					mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0],
 
-	    		// write the bytes of the string to an ArrayBuffer
-	    		ab = new ArrayBuffer(byteString.length),
-	    		ia = new Uint8Array(ab);
+					// write the bytes of the string to an ArrayBuffer
+					ab = new ArrayBuffer(byteString.length),
+					ia = new Uint8Array(ab);
 	
 	    for (var i = 0, f; f = ia[i]; i++) {
 	        f = byteString.charCodeAt(i);
