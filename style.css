@@ -45,6 +45,7 @@ fieldset li {
 #preview {
 	text-align:center;
 	margin-bottom:15px;
+	position:relative;
 }
 
 .over {
@@ -55,10 +56,59 @@ canvas {
 	position:relative;
 	border:1px solid #000;
 	cursor:move;
+	overflow: auto
 }
 
 canvas:active {
 	cursor:move;
+}
+
+.zoomin, .zoomout, .crop {
+  position:absolute;
+  top:10px;
+  right:10px;
+  display:block;
+  width:20px;
+  line-height:20px;
+  border:1px solid #000;
+  background:rgba(0,0,0, .6);
+  color:#fff;
+  text-align:center;
+  cursor:pointer;
+  -webkit-user-select:  none;
+  -khtml-user-select:   none;
+  -moz-user-select:     none;
+  -ms-user-select:      none;
+  -o-user-select:       none;
+  
+  -webkit-background-clip: padding-box; /* fix WebKit background bleed on border-radius */
+      -webkit-border-radius-top-left: 15px; /* pre-Safari 5, delete unused */
+     -webkit-border-radius-top-right: 15px;
+                                       
+                  -moz-border-radius: 15px 15px 0 0;
+                       border-radius: 15px 15px 0 0;
+  
+}
+
+.zoomout {
+  top:30px;
+  -webkit-border-radius-bottom-right: 15px;
+   -webkit-border-radius-bottom-left: 15px;
+   -moz-border-radius: 0 0 15px 15px;
+        border-radius: 0 0 15px 15px;
+}
+
+.crop {
+  -webkit-border-radius: 10px;
+     -moz-border-radius: 10px;
+          border-radius: 10px;
+  left:10px;
+  line-height:24px;
+  cursor:pointer;
+  width:50px;
+  display:block;
+  font-size:12px;
+  text-transform:uppercase;
 }
 
 [draggable] {
