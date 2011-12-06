@@ -3,9 +3,9 @@
   // Constructor
   var CroppingTool = function(img, config) {
     
+    config = config || {};
     
-    var config = config || {},
-        preview = config.preview || document.querySelector("#preview");
+    var preview = config.preview || document.querySelector("#preview");
     
     // Smallest width (visible canvas area)
     var editorWidth = this.editorWidth = config.editorWidth || 580;
@@ -16,11 +16,22 @@
     // what percentage of image width is transmit width?
     var percentage = (transmitWidth / img.width) * 100;
     
+    // this is the multiplyer for the crop function - the ratio of the editor width to the transmit width
     this.cropRatio = (transmitWidth / editorWidth);
+
+    // Panning state
+    this.isPanning = false;
+    
+    // this is what performs the actual crop - never added to the dom
+    var cropCanvas = this.cropCanvas = this.createCanvas(this.transmitWidth, img);
+    
+    // this is what the user sees - scaled version of the one above
+    this.canvas = this.createCanvas(this.editorWidth, img);
     
     // the image is too small
-    if (percentage > 100 || this.scale(transmitWidth, img, true).height < Math.round(0.5625 * transmitWidth)) { 
+    if (percentage > 100 || cropCanvas.height < Math.round(0.5625 * transmitWidth)) { 
       console.log("image is too small");
+      this.destroy();
       return false; 
     }
         
@@ -28,27 +39,52 @@
     // this is different to the transmitWidth! imagine the image is zoomed in 100%, the part of the image you see is transmitWidth, 
     // maxWidth is the maximum width allowed to acheive this
     this.maxWidth = Math.round((editorWidth * 100) / percentage);
-
-    // Panning state
-    this.isPanning = false;
     
-    // main initialisation function
-    this.init(img, editorWidth);
-  
-    var canvas = this.canvas.canvas;
+    // store img on instance
+    this.img = img;
+    
+    // baseline for origin of the image relative to top left of canvas - this will move around every time we redraw the image
+    this.origin = { x : 0, y : 0 };
+    
+    // the scale of the image drawn on the canvas
+    this.scaleImg = this.canvas.scale;
+    
+    var canvas = this.canvas;
     
     // amount to resize the image by when zooming in and out
     this.resizeAmt = (this.maxWidth * 10) / 100;
     
-    preview.appendChild(canvas);
-    //preview.appendChild(this.cropCanvas.canvas);
+    // create a parent wrapper for the canvas
+    var parent = document.createElement("div");
+    parent.className = "crop-parent";
+    parent.style.width = editorWidth + "px";
+    
+    // add the parent to the canvas object
+    canvas.parent = parent;
+    
+    // main initialisation function
+    this.start(canvas);
+    
+    // wrap the canvas in the parent
+    parent.appendChild(canvas.canvas);
+    
+    // place the parent in the dom
+    preview.appendChild(parent);
+    
+    preview.appendChild(this.cropCanvas.canvas);
   
     // create zoom interface buttons
-    this.createUIElement(canvas, preview, "zoomin", "+");
-    this.createUIElement(canvas, preview, "zoomout", "-");
+    this.createUIElement(canvas, "zoomin", "+", "top");
+    this.createUIElement(canvas, "zoomout", "-", "top");
+                               
+    // create crop button      
+    this.createUIElement(canvas, "crop", "crop", "bottom");
+    this.createUIElement(canvas, "reset", "reset", "bottom");
     
-    // create crop button
-    this.createUIElement(canvas, preview, "crop", "crop");
+    parent = null;
+    canvas = null;
+    preview = null;
+    config = null;
   };
   
   CroppingTool.prototype = {
@@ -61,13 +97,18 @@
         case "mousemove": this.mousemove(e); break;
         case "mouseup": this.mouseup(e); break;
         case "click": 
-          if (e.target.dataset.ui === "crop") {
-            this.cropImage();
-          } else {
-            this.zoomClick(e, this.resizeAmt); 
+          switch(e.target.dataset.ui) {
+            case "crop":
+              this.crop();
+              break;
+            case "reset":
+              this.reset();
+              break;
+            default:
+              this.zoom(e, this.resizeAmt); 
           }
         break;
-        //case "wheel": case "scroll": case "mousewheel": this.zoomClick(e, 5); break;
+        //case "wheel": case "scroll": case "mousewheel": this.zoom(e, 5); break;
       }
     },
     
@@ -81,12 +122,12 @@
             height
           );
       
+      // limit allows us to specify whether we want the scale to be restricted to 100% of the max 
       scale = (limit && scale > 1) ? 1 : scale;
 
       return {
         width : parseInt(width * scale, 10),
-        height : parseInt(height * scale, 10),
-        scale : scale
+        height : parseInt(height * scale, 10)
       };
     },
     
@@ -115,88 +156,88 @@
       
     },
     
-    init : function(img) {
-
-      // this is what performs the actual crop
-      var cropCanvas = this.cropCanvas = this.createCanvas(this.transmitWidth, img);
+    start : function(obj) {
       
-      // this is what the user sees
-      this.canvas = this.createCanvas(this.editorWidth, img);
+      var canvas = obj.canvas,
+          origin = this.origin;
       
-      var canvas = this.canvas.canvas;
+      obj.parent.classList.add("active");
 
       canvas.addEventListener("mousedown", this, false);
       canvas.addEventListener("mousemove", this, false);
       canvas.addEventListener("mouseup", this, false);
       
-      this.img = img;
-      this.origin = { x : 0, y : 0 };
-      this.scaleImg = this.canvas.scale;
+      // canvas.addEventListener("wheel", this, false);
+      // canvas.addEventListener("scroll", this, false);
+      // canvas.addEventListener("mousewheel", this, false);
       
-      this.drawImage(img);
+      this.draw(origin);
+      // reset the origin relative to the top left of the canvas
+      obj.ctx.translate(origin.x, origin.y);
+    },
+    
+    end : function(obj) {
       
-      return true;
+      var canvas = obj.canvas;
+      
+      obj.parent.classList.remove("active");
+      
+      // disable mouse events
+      canvas.removeEventListener("mousedown", this, false);
+      canvas.removeEventListener("mousemove", this, false);
+      canvas.removeEventListener("mouseup", this, false);
+      
+      // canvas.removeEventListener("wheel", this, false);
+      // canvas.removeEventListener("scroll", this, false);
+      // canvas.removeEventListener("mousewheel", this, false);
+      
     },
     
     // this is the letterbox that appears at the top and bottom of the image in the editor.
     // needs to be redrawn everytime the canvas is redrawn
-    // 
     letterBox : function(ctx) {
       
-      var editorWidth = this.editorWidth,
-          canvas = this.canvas,
+      //var editorWidth = this.editorWidth,
+      
+      var canvas = this.canvas,
+          width = canvas.width,
           maskHeight = canvas.maskHeight;
       
       ctx.save();
       ctx.setTransform(1,0,0,1,0,0);
-      ctx.fillStyle = "rgba(255,0,0,0.5)";
-      ctx.fillRect(0, 0, editorWidth, maskHeight);
-      ctx.fillRect(0, canvas.maskOffset, editorWidth, maskHeight);
+      ctx.fillStyle = "rgba(0,0,0,0.6)";
+      ctx.fillRect(0, 0, width, maskHeight);
+      ctx.fillRect(0, canvas.maskOffset, width, maskHeight);
       ctx.restore();
     },
     
     position : function(e) {
-
-      // check which property we're looking for - but only do it once
-
-      if (e.hasOwnProperty("layerX")) { // Firefox
-
-        this.position = function(e) {
-          return {
-            x : e.layerX,
-            y : e.layerY
-          };
-        };
-
-      } else if (e.hasOwnProperty("offsetX")) { // Opera
-
-        this.position = function(e) {
-          return {
-            x : e.offsetX,
-            y : e.offsetY
-          };
-        };
-
-      }
-
-      return this.position(e);
+      return {
+        x : e.layerX,
+        y : e.layerY
+      };
     },
     
-    createUIElement : function(canvas, parent, name, text) {
+    createUIElement : function(canvas, name, text, pos) {
       
       // function for creating ui buttons - might make this a static method 
       var el = document.createElement("a");
       
       el.textContent = text;
-      el.className = el.dataset.ui = name;
+      el.dataset.ui = name;
+      el.className = name + " crop-ui";
       el.addEventListener("click", this, false);
+      el.style[pos] = ((name === "zoomout") ? canvas.maskHeight + 30 : canvas.maskHeight + 10) + "px";
       
-      parent.insertBefore(el, canvas);
+      canvas.parent.insertBefore(el, canvas.canvas);
     },
     
-    zoomClick : function(e, amt) {
-      var amt = amt || 1,
-          target = e.target,
+    // click, click, ZOOM!!
+    zoom : function(e, amt) {
+      
+      amt = amt || 1;
+      
+      var target = e.target,
           scaleImg = this.scaleImg,
           offset = scaleImg.width,
           wheel = e.wheelDeltaY || false;
@@ -222,18 +263,23 @@
       this.move = { x : ~~(((newSize.width - scaleImg.width) / 2) * -1), y : ~~(((newSize.height - scaleImg.height) / 2) * -1) };
       
       // no need to specify origin as it has already been reset
-      this.drawImage(this.img, this.move);
+      this.draw(this.move);
+      
+      // check that we haven't overstepped the bounds of the crop area
       this.checkBounds();
     },
     
     mousedown : function(e) {
+      // we are panning, start tracking the mouse position
       this.isPanning = true;
-      // cache the start position
+      
+      // cache the start position, so we can track the mouse move relative to this point
       this.postStart = this.position(e);
     },
     
     mousemove : function(e) {
-
+      
+      // if we are no longer panning, stop tracking the mouse position
       if (!this.isPanning) { return; }
         
       var pos = this.position(e),
@@ -241,14 +287,16 @@
           move = this.move = { x : (pos.x - posStart.x), y : (pos.y - posStart.y) };
       
       // move the image by the difference between the cached start and current mouse position
-      this.drawImage(this.img, move);
+      this.draw(move);
     },
     
     mouseup : function() {
       
+      // we are no longer panning stop tracking the mouse position
       this.isPanning = false;
-      this.checkBounds();
       
+      // check that we haven't overstepped the bounds of the crop area
+      this.checkBounds();
     },
     
     checkBounds : function() {
@@ -268,6 +316,7 @@
       origin.x += move.x;
       origin.y += move.y;
       
+      // set the translate origin to the new position
       ctx.translate(move.x, move.y);
       
       // check we haven't overstepped the bounds
@@ -299,23 +348,27 @@
         correct.y = maskOffset - vDiff;
       }
       
-      console.log(origin.x, origin.y)
-      
+      // if we don't need to make a correction - return 
       if (correct.y === 0 && correct.x === 0) { return; }
-        
-      this.drawImage(this.img, correct);
+      
+      // otherwise, draw the image in the new position
+      this.draw(correct);
+      
+      // set the translate origin to the new position
       ctx.translate(correct.x, correct.y);
       
+      // add the correction to the origin, so that we can keep track of the position relative to the top left of the canvas
       origin.x += correct.x;
       origin.y += correct.y;
       
     },
     
-    drawImage : function(img, pos) {
+    draw : function(pos) {
+      
+      pos = pos || {};
       
       var scaleImg = this.scaleImg,
           canvas = this.canvas,
-          pos = pos || {},
           ctx = canvas.ctx;
       
       // clear the canvas (otherwise we get psychadelic trails)
@@ -325,12 +378,38 @@
       ctx.restore();
       
       // draw the image
-      ctx.drawImage(img, pos.x || 0, pos.y || 0, scaleImg.width, scaleImg.height);
+      ctx.drawImage(this.img, pos.x || 0, pos.y || 0, scaleImg.width, scaleImg.height);
       this.letterBox(ctx);
       
     },
     
-    cropImage : function() {
+    destroy : function() {
+      
+      var canvas = this.canvas,
+          el = canvas.parent;
+      
+      if (el) {
+        el.parentNode.removeChild(el);
+        el = null;
+      }
+      
+      this.end(canvas);
+      
+      this.canvas = null;
+      this.cropCanvas = null;
+    },
+    
+    reset : function() {
+      
+      var canvas = this.canvas;
+      
+      // reinstate the canvas height with the letterboxing (un 16 x 9 it)
+      canvas.canvas.height = canvas.height;
+      // turn on the event listeners for the canvas
+      this.start(canvas);
+    },
+    
+    crop : function() {
       
       var canvas = this.canvas,
           maskHeight = canvas.maskHeight,
@@ -338,34 +417,26 @@
           ctx = canvas.ctx,
           origin = this.origin;
       
+      // resize canvas first to remove mask and make the image 16 x 9
       canvas.canvas.height -= (maskHeight * 2);
-      ctx.drawImage(this.img, origin.x, origin.y - maskHeight, scaleImg.width, scaleImg.height);
       
+      // draw the image relative to the tracked origin (minus the maskheight for the y axis)
+      ctx.drawImage(this.img, origin.x, origin.y - maskHeight, scaleImg.width, scaleImg.height);
       
       // transmit crop
       var cropCanvas = this.cropCanvas,
           cropCtx = cropCanvas.ctx;
       
+      // reset canvas height to 16 * 9 height
       cropCanvas.canvas.height = cropCanvas.ratioHeight;
 
       // draw the image
       cropCtx.drawImage(this.img, (origin.x * this.cropRatio), (origin.y * this.cropRatio) - cropCanvas.maskHeight, ~~(scaleImg.width * this.cropRatio), ~~(scaleImg.height * this.cropRatio));
       
-    },
-    
-    exportImage : function(width, height) {
+      // turn off the event listeners for the canvas
+      this.end(canvas);
       
-      var scaleImg = this.scaleImg,
-          width = width || scaleImg.width,
-          height = height || scaleImg.height,
-      
-      // create a new canvas instance with the image at full width and height - this is what we transmit via ajax
-          canvas = this.createCanvas(scaleImg.width, scaleImg.height),
-          ctx = canvas.getContext('2d');
-      
-      ctx.drawImage(this.img, 0, 0, scaleImg.width, scaleImg.height);
-      
-      return canvas.toDataURL("image/png");
+      //return cropCtx.toDataURL("image/png");
     }
     
   };

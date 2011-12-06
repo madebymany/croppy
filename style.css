@@ -59,18 +59,26 @@ canvas {
 	overflow: auto
 }
 
-canvas:active {
+.active:active {
 	cursor:move;
 }
 
-.zoomin, .zoomout, .crop {
-  position:absolute;
-  top:10px;
-  right:10px;
+.crop-parent {
+  position:relative;
+  margin:0 auto;
+}
+
+.crop-parent.active .crop-ui {
   display:block;
+}
+
+.crop-ui {
+  display:none;
+  position:absolute;
+  z-index:2;
+  right:10px;
   width:20px;
   line-height:20px;
-  border:1px solid #000;
   background:rgba(0,0,0, .6);
   color:#fff;
   text-align:center;
@@ -90,25 +98,34 @@ canvas:active {
   
 }
 
-.zoomout {
+.zoomin {
   top:30px;
+}
+
+.zoomout {
+  top:50px;
   -webkit-border-radius-bottom-right: 15px;
    -webkit-border-radius-bottom-left: 15px;
    -moz-border-radius: 0 0 15px 15px;
         border-radius: 0 0 15px 15px;
 }
 
-.crop {
+.crop, .reset {
   -webkit-border-radius: 10px;
      -moz-border-radius: 10px;
           border-radius: 10px;
-  left:10px;
+  right:10px;
+  bottom:60px;
   line-height:24px;
   cursor:pointer;
   width:50px;
-  display:block;
   font-size:12px;
   text-transform:uppercase;
+}
+
+.reset {
+  left:10px;
+  display:block;
 }
 
 [draggable] {
