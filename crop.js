@@ -8,44 +8,46 @@
         preview = config.preview || document.querySelector("#preview");
     
     // Smallest width (visible canvas area)
-    this.editorWidth = config.editorWidth || 580;
+    var editorWidth = this.editorWidth = config.editorWidth || 580;
     
     // Max width available for whole site - no image on the site will ever have to be bigger than this
-    var transmitWidth = config.maxWidth || 1000,
-        // this is the min height of the image based on 
-        transmitHeight = ~~(0.5625 * transmitWidth);
-        
-    this.transmitScale = { x : transmitWidth, y : transmitHeight };
+    var transmitWidth = this.transmitWidth = config.maxWidth || 1000;
     
     // what percentage of image width is transmit width?
     var percentage = (transmitWidth / img.width) * 100;
     
+    this.cropRatio = (transmitWidth / editorWidth);
+    
     // the image is too small
-    if (percentage > 100 || this.scale(transmitWidth, img, true).height < ~~(0.5625 * transmitWidth)) { 
+    if (percentage > 100 || this.scale(transmitWidth, img, true).height < Math.round(0.5625 * transmitWidth)) { 
       console.log("image is too small");
       return false; 
     }
         
     // Largest width possible so that max zoom level does not exceed max available for the whole site (transmitWidth)
-    this.maxWidth = (this.editorWidth * 100) / percentage;
-    
+    // this is different to the transmitWidth! imagine the image is zoomed in 100%, the part of the image you see is transmitWidth, 
+    // maxWidth is the maximum width allowed to acheive this
+    this.maxWidth = Math.round((editorWidth * 100) / percentage);
+
     // Panning state
     this.isPanning = false;
     
     // main initialisation function
-    this.init(img, this.editorWidth);
+    this.init(img, editorWidth);
   
-    var canvas = this.canvas;
+    var canvas = this.canvas.canvas;
     
     // amount to resize the image by when zooming in and out
     this.resizeAmt = (this.maxWidth * 10) / 100;
-  
+    
     preview.appendChild(canvas);
+    //preview.appendChild(this.cropCanvas.canvas);
   
     // create zoom interface buttons
     this.createUIElement(canvas, preview, "zoomin", "+");
     this.createUIElement(canvas, preview, "zoomout", "-");
     
+    // create crop button
     this.createUIElement(canvas, preview, "crop", "crop");
   };
   
@@ -65,7 +67,7 @@
             this.zoomClick(e, this.resizeAmt); 
           }
         break;
-        case "wheel": case "scroll": case "mousewheel": this.zoomClick(e, 5); break;
+        //case "wheel": case "scroll": case "mousewheel": this.zoomClick(e, 5); break;
       }
     },
     
@@ -83,50 +85,53 @@
 
       return {
         width : parseInt(width * scale, 10),
-        height : parseInt(height * scale, 10)
+        height : parseInt(height * scale, 10),
+        scale : scale
       };
     },
     
-    createCanvas : function(width, height) {
-      var canvas = document.createElement("canvas");
+    createCanvas : function(width, img) {
+      
+      var canvas = document.createElement("canvas"),
+          ratioHeight = Math.round(0.5625 * width),
+          scale = this.scale(width, img, true),
+          maskHeight = (scale.height - ratioHeight) / 2;
       
       canvas.width = width;
-      canvas.height = height;
+      canvas.height = scale.height;
       
-      return canvas;
+      return {
+        width : scale.width,
+        height : scale.height,
+        canvas : canvas,
+        ctx : canvas.getContext('2d'),
+        scale : scale,
+        // this is the height of an individual mask (one of the letterbox things top and bottom)
+        maskHeight : maskHeight,
+        // this is the distance between the top 0 x 0 point and position that we need to place the bottom mask
+        maskOffset : ratioHeight + maskHeight,
+        ratioHeight : ratioHeight
+      };
+      
     },
     
     init : function(img) {
 
-      var editorWidth = this.editorWidth,
-          minEditorHeight = ~~(0.5625 * this.editorWidth), 
-          scale = this.scale,
-          scaleImg = scale(editorWidth, img, true);
+      // this is what performs the actual crop
+      var cropCanvas = this.cropCanvas = this.createCanvas(this.transmitWidth, img);
       
       // this is what the user sees
-      var canvas = this.createCanvas(scaleImg.width, scaleImg.height);
+      this.canvas = this.createCanvas(this.editorWidth, img);
       
-      // this is what performs the actual crop
-      var cropCanvas = this.createCanvas(scaleImg.width, scaleImg.height);
+      var canvas = this.canvas.canvas;
 
       canvas.addEventListener("mousedown", this, false);
       canvas.addEventListener("mousemove", this, false);
       canvas.addEventListener("mouseup", this, false);
-      canvas.addEventListener("wheel", this, false);
-      canvas.addEventListener("scroll", this, false);
-      canvas.addEventListener("mousewheel", this, false);
-
-      var ctx = canvas.getContext('2d');
       
       this.img = img;
-      this.canvas = canvas;
-      this.ctx = ctx;
-      this.scaleImg = scaleImg;
       this.origin = { x : 0, y : 0 };
-      
-      this.maskHeight = (canvas.height - minEditorHeight) / 2;
-      this.maskOffset = minEditorHeight + this.maskHeight;
-      this.minHeight = minEditorHeight;
+      this.scaleImg = this.canvas.scale;
       
       this.drawImage(img);
       
@@ -139,13 +144,14 @@
     letterBox : function(ctx) {
       
       var editorWidth = this.editorWidth,
-          maskHeight = this.maskHeight;
+          canvas = this.canvas,
+          maskHeight = canvas.maskHeight;
       
       ctx.save();
       ctx.setTransform(1,0,0,1,0,0);
       ctx.fillStyle = "rgba(255,0,0,0.5)";
       ctx.fillRect(0, 0, editorWidth, maskHeight);
-      ctx.fillRect(0, this.maskOffset, editorWidth, maskHeight);
+      ctx.fillRect(0, canvas.maskOffset, editorWidth, maskHeight);
       ctx.restore();
     },
     
@@ -178,7 +184,7 @@
     
     createUIElement : function(canvas, parent, name, text) {
       
-      // function for creating plus and minus buttons - might make this a static method 
+      // function for creating ui buttons - might make this a static method 
       var el = document.createElement("a");
       
       el.textContent = text;
@@ -186,8 +192,6 @@
       el.addEventListener("click", this, false);
       
       parent.insertBefore(el, canvas);
-      
-      this["name"] = el;
     },
     
     zoomClick : function(e, amt) {
@@ -200,9 +204,7 @@
       e.preventDefault();
       
       // Increment or decrement depending on the button pushed or direction of the scroll wheel
-      offset += (target.dataset.ui === "zoomin" || (wheel && wheel > 0)) ? amt : -amt;
-      
-      console.log(offset, target.dataset.ui, amt, this.maxWidth, this.editorWidth)
+      offset += (target.dataset.ui === "zoomin") ? amt : -amt; // || (wheel && wheel > 0)) ? amt : -amt;
       
       if (offset > this.maxWidth) {
         console.log("cannot go larger than this");
@@ -213,9 +215,7 @@
       }
       
       // scale the image based on the offset which is current width +/- amt
-      var newSize = this.scale(offset, scaleImg);
-      
-      this.scaleImg = newSize;
+      var newSize = this.scaleImg = this.scale(offset, scaleImg);
       
       // offset the image by the inverse of half the difference between the old width and height and the new width and height
       // this will make it look like we're resizing from the center
@@ -253,13 +253,16 @@
     
     checkBounds : function() {
       
+      // move = the amount the mouse cursor has moved relative to its start position
+      // origin = the top left of the image relative to the top left of the canvas. We use this later to determine where to crop
+      
       var move = this.move,
           origin = this.origin,
           scaleImg = this.scaleImg,
           canvas = this.canvas,
-          maskHeight = this.maskHeight,
+          maskHeight = canvas.maskHeight,
           correct = { x : 0, y : 0 },
-          ctx = this.ctx;
+          ctx = canvas.ctx;
       
       // reset the origin (top left) to the new location (top left) of the image
       origin.x += move.x;
@@ -296,6 +299,8 @@
         correct.y = maskOffset - vDiff;
       }
       
+      console.log(origin.x, origin.y)
+      
       if (correct.y === 0 && correct.x === 0) { return; }
         
       this.drawImage(this.img, correct);
@@ -307,10 +312,11 @@
     },
     
     drawImage : function(img, pos) {
+      
       var scaleImg = this.scaleImg,
           canvas = this.canvas,
           pos = pos || {},
-          ctx = this.ctx;
+          ctx = canvas.ctx;
       
       // clear the canvas (otherwise we get psychadelic trails)
       ctx.save();
@@ -321,19 +327,29 @@
       // draw the image
       ctx.drawImage(img, pos.x || 0, pos.y || 0, scaleImg.width, scaleImg.height);
       this.letterBox(ctx);
+      
     },
     
     cropImage : function() {
       
-      var maskHeight = this.maskHeight,
+      var canvas = this.canvas,
+          maskHeight = canvas.maskHeight,
           scaleImg = this.scaleImg,
-          ctx = this.ctx;
+          ctx = canvas.ctx,
+          origin = this.origin;
       
-      console.log(this.move.x, this.move)
+      canvas.canvas.height -= (maskHeight * 2);
+      ctx.drawImage(this.img, origin.x, origin.y - maskHeight, scaleImg.width, scaleImg.height);
       
-      ctx.drawImage(this.img, this.move.x, -maskHeight, scaleImg.width, scaleImg.height);
-      this.canvas.height -= (maskHeight * 2);
-      ctx.drawImage(this.img, this.move.x, this.move.y, scaleImg.width, scaleImg.height);
+      
+      // transmit crop
+      var cropCanvas = this.cropCanvas,
+          cropCtx = cropCanvas.ctx;
+      
+      cropCanvas.canvas.height = cropCanvas.ratioHeight;
+
+      // draw the image
+      cropCtx.drawImage(this.img, (origin.x * this.cropRatio), (origin.y * this.cropRatio) - cropCanvas.maskHeight, ~~(scaleImg.width * this.cropRatio), ~~(scaleImg.height * this.cropRatio));
       
     },
     
