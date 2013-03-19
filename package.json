@@ -1,8 +1,20 @@
 {
   "name": "Croppy",
   "version": "0.0.1",
-  "dependencies": {
-    "grunt": "*",
-    "grunt-rigger": "*"
+  "author"          : {
+    "name"  : "Andrew Walker",
+    "email" : "andy@gmadebymany.co.uk"
+  },
+  "repository"      : {
+    "type" : "git",
+    "url"  : "git@github.com:madebymany/croppy.git"
+  },
+  "scripts"         : {
+    "test" : "grunt jasmine"
+  },
+  "devDependencies" : {
+    "grunt-jasmine-runner" : "latest",
+    "grunt-rigger": "*",
+    "grunt" : "~0.3.9"
   }
 }

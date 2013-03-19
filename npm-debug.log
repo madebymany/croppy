@@ -1,0 +1,29 @@
+0 info it worked if it ends with ok
+1 verbose cli [ 'node', '/usr/local/bin/npm', 'init' ]
+2 info using npm@1.1.61
+3 info using node@v0.8.8
+4 verbose node symlink /usr/local/bin/node
+5 verbose read json /Users/andrewwalker/Sites/croppy/package.json
+6 warn package.json Croppy@0.0.1 No README.md file found!
+7 silly package data undefined
+8 info init written successfully
+9 error Error: canceled
+9 error     at Interface.<anonymous> (/usr/local/Cellar/node/0.8.8/lib/node_modules/npm/node_modules/read/lib/read.js:65:13)
+9 error     at Interface.EventEmitter.emit (events.js:115:20)
+9 error     at Interface._ttyWrite (readline.js:606:16)
+9 error     at ReadStream.onkeypress (readline.js:98:10)
+9 error     at ReadStream.EventEmitter.emit (events.js:115:20)
+9 error     at emitKey (readline.js:1057:12)
+9 error     at ReadStream.onData (readline.js:806:7)
+9 error     at ReadStream.EventEmitter.emit (events.js:88:17)
+9 error     at TTY.onread (net.js:395:14)
+10 error If you need help, you may report this log at:
+10 error     <http://github.com/isaacs/npm/issues>
+10 error or email it to:
+10 error     <npm-@googlegroups.com>
+11 error System Darwin 12.2.0
+12 error command "node" "/usr/local/bin/npm" "init"
+13 error cwd /Users/andrewwalker/Sites/croppy
+14 error node -v v0.8.8
+15 error npm -v 1.1.61
+16 verbose exit [ 1, true ]
