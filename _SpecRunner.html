@@ -1,44 +1,29 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-        "http://www.w3.org/TR/html4/loose.dtd">
+<!doctype html>
 <html>
 <head>
-    <title>Jasmine Spec Runner</title>
+  <meta charset="utf-8">
+  <title>Jasmine Spec Runner</title>
 
-    
-    <link rel="stylesheet" type="text/css" href="/node_modules/grunt-jasmine-runner/jasmine/lib/jasmine-core/jasmine.css">
-    
+  <link rel="stylesheet" type="text/css" href=".grunt/grunt-contrib-jasmine/jasmine.css">
 
-<!--
-    <script type="text/javascript" src="/jasmine/lib/jasmine-core/jasmine.js"></script>
-    <script type="text/javascript" src="/jasmine/lib/jasmine-core/jasmine-html.js"></script>
--->
-    
-    <script type="text/javascript" src="/node_modules/grunt-jasmine-runner/jasmine/lib/jasmine-core/jasmine.js"></script>
-    
-    <script type="text/javascript" src="/node_modules/grunt-jasmine-runner/jasmine/lib/jasmine-core/jasmine-html.js"></script>
-    
-    <script type="text/javascript" src="/src/croppy.canvas.js"></script>
-    
-    <script type="text/javascript" src="/src/croppy.constructor.js"></script>
-    
-    <script type="text/javascript" src="/src/croppy.helpers.js"></script>
-    
-    <script type="text/javascript" src="/src/croppy.image.js"></script>
-    
-    <script type="text/javascript" src="/src/croppy.js"></script>
-    
-    <script type="text/javascript" src="/src/croppy.ui.js"></script>
-    
-    <script type="text/javascript" src="/node_modules/grunt-jasmine-runner/tasks/jasmine/phantom-helper.js"></script>
-    
-    <script type="text/javascript" src="/node_modules/grunt-jasmine-runner/tasks/jasmine/reporters/ConsoleReporter.js"></script>
-    
-    <script type="text/javascript" src="/node_modules/grunt-jasmine-runner/tasks/jasmine/reporters/JUnitReporter.js"></script>
-    
-    <script type="text/javascript" src="/node_modules/grunt-jasmine-runner/tasks/jasmine/jasmine-helper.js"></script>
-    
+
+  
+  <script src="./.grunt/grunt-contrib-jasmine/jasmine.js"></script>
+  
+  <script src="./.grunt/grunt-contrib-jasmine/jasmine-html.js"></script>
+  
+  <script src="./spec/helpers/*.js"></script>
+  
+  <script src="./dist/croppy.js"></script>
+  
+  <script src="./spec/**/*.spec.js"></script>
+  
+  <script src="./.grunt/grunt-contrib-jasmine/reporter.js"></script>
+  
+  <script src="./.grunt/grunt-contrib-jasmine/jasmine-helper.js"></script>
+  
+
 </head>
-
 <body>
 </body>
 </html>

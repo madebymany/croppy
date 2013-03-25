@@ -18,7 +18,11 @@ var Image = function(img) {
 
   this.canvas = new Canvas(img, this.aspect_ratio, img);
 
-  this.dom_container.appendChild(this.canvas.get_canvas_el());
+  var ui = new UI();
+
+  ui.appendChild(this.canvas.get_canvas_el());
+
+  this.dom_container.appendChild(ui);
 
   return this;
 
@@ -27,11 +31,10 @@ var Image = function(img) {
 Image.prototype = {
 
   _set_orientaion : function() {
-    if (this.aspect_ratio[0] >= this.aspect_ratio[1]) {
+    if (this.aspect_ratio.width >= this.aspect_ratio.height) {
       return this.orientation = "landscape";
-    } else {
-      return this.orientation = "portrait";
     }
+    return this.orientation = "portrait";
   },
 
   get_relative_dimensions_from_height : function(width) {

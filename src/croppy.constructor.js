@@ -1,14 +1,14 @@
 // Constructor
 var Croppy = function(files, config) {
 
-  if (!window.FileReader) {
-    throw "Browser does not support fileReader - cannot continue";
+  if (!this._can_cut_the_mustard()) {
+    throw "Browser does not cut the mustard - cannot continue";
   }
 
   // override defaults
   extend(this.config, config);
 
-  // if set, covert aspect ratio to floating point number
+  // if set, convert aspect ratio to floating point number
   this._set_config_aspect_ratio(this.config.aspect_ratio);
 
   // set parent dom container
@@ -29,6 +29,13 @@ var Croppy = function(files, config) {
 };
 
 Croppy.prototype = {
+
+  _can_cut_the_mustard : function() {
+    if (window.FileReader) {
+      return true;
+    }
+    return false;
+  },
 
   /**
    * Default config options

@@ -20,7 +20,12 @@ var extend = function(base) {
   });
 
   return base;
+};
 
+var executeRecursive = function(method, argsList, context) {
+  argsList.forEach(function(args){
+    method[Array.isArray(args) ? "apply" : "call"](context, args);
+  });
 };
 
 var create = function(protoProps, staticProps) {

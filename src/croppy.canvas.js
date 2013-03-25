@@ -76,7 +76,6 @@ Canvas.prototype = {
   // baseline for origin of the image relative to top left of canvas
   // this will move around every time we redraw the image
   _set_origin : function(origin) {
-
     // if origin is null or undefined (deliberate ==)
     this.origin = (origin != null) ? origin : { x : 0, y : 0 };
   },
@@ -87,7 +86,6 @@ Canvas.prototype = {
 
   // convenience function for adding event listeners to the canvas
   on : function(event, el, callback) {
-    console.log(((isNaN(el) && el) || this.get_canvas_el()), event, (callback || this));
     (el || this.get_canvas_el())
       .addEventListener(event, (callback || this), false);
   },
@@ -101,9 +99,7 @@ Canvas.prototype = {
   // Refernced by this when using addEventListener
   // Allows us to persist Canvas scope in callbacks
   handleEvent : function(e) {
-
     e.preventDefault();
-    console.log(e.type);
     switch(e.type) {
       case "mousedown": this._on_mousedown(e); break;
       case "mousemove": this._on_mousemove(e); break;
@@ -114,16 +110,16 @@ Canvas.prototype = {
   },
 
   _set_mouse_events : function(method) {
-    // handle mouse events
+
     [
       "mousedown",
       "mousemove",
       "mouseup",
       "mouseleave"
     ].forEach(function(event){
-      console.log(method, event);
       this[method](event);
     }, this);
+
     this[method]("mouseup", window);
   },
 
@@ -169,7 +165,6 @@ Canvas.prototype = {
   },
 
   _on_mousedown : function(e) {
-    console.log("lol");
     // we are panning, start tracking the mouse position
     this.is_panning = true;
 
@@ -180,12 +175,11 @@ Canvas.prototype = {
   },
 
   _on_mousemove : function(e) {
-    console.log("mousemove");
     // if we are no longer panning, stop tracking the mouse position
     if (!this.is_panning) { return; }
 
-    var current_position = this.get_mouse_position(e),
-        start_position = this.get_start_position();
+    var current_position  = this.get_mouse_position(e),
+        start_position    = this.get_start_position();
 
     // Track the difference between the cached start
     // and current mouse position
@@ -210,12 +204,11 @@ Canvas.prototype = {
 
     // check that we haven't overstepped the bounds of the crop area
     this._check_bounds();
-
   },
 
   _calculate_correction : function(scale_offset, canvas_offset, origin) {
 
-    var difference = (scale_offset + origin.y);
+    var difference = (scale_offset + origin);
 
     // too far down or right (snap back to TOP or LHS)
     if (difference > scale_offset) {
@@ -229,27 +222,11 @@ Canvas.prototype = {
 
   },
 
-  // _calculate_horizontal_correction : function(image, canvas, origin) {
-
-  //   var horizontal_difference = (image.width + origin.x);
-
-  //   // too far right (snap back to LHS)
-  //   if (horizontal_difference > image.width) {
-  //     return -origin.x;
-  //   }
-
-  //   // too far left (snap back to RHS)
-  //   else if (horizontal_difference < canvas.width) {
-  //     return canvas.width - horizontal_difference;
-  //   }
-
-  // },
-
   _check_bounds : function() {
 
-    var image = this.get_img(),
-        canvas = this.get_canvas_el();
-        origin = this.get_origin(),
+    var image   = this.get_img(),
+        canvas  = this.get_canvas_el();
+        origin  = this.get_origin(),
 
         // calculate the horzontal (x) and vertical (y) correction needed
         // to snap the image back into place
@@ -270,7 +247,6 @@ Canvas.prototype = {
 
     // set the translate origin to the new position
     this.get_ctx().translate(this.origin.x, this.origin.y);
-
   }
 
 };
