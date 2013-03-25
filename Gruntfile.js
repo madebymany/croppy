@@ -2,6 +2,10 @@
 module.exports = function(grunt) {
 
   grunt.loadNpmTasks('grunt-rigger');
+  grunt.loadNpmTasks('grunt-contrib-jshint');
+  grunt.loadNpmTasks('grunt-contrib-uglify');
+  grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-contrib-jasmine');
 
   grunt.initConfig({
 
@@ -10,40 +14,43 @@ module.exports = function(grunt) {
       banner: '// Croppy, v<%= meta.version %>\n'
     },
 
-    lint: {
-      afterconcat: ['<config:rig.build.dest>']
+    'jasmine' : {
+      'croppy': {
+        src : 'dist/croppy.js',
+        options: {
+          specs : 'spec/**/*.spec.js',
+          helpers : 'spec/helpers/*.js'
+        }
+      }
     },
 
     rig: {
       build: {
         src: ['<banner:meta.banner>', 'src/croppy.js'],
-        dest: 'lib/croppy.js'
+        dest: 'dist/croppy.js'
       }
     },
 
-    min: {
+    uglify: {
+      options: {
+        mangle: false
+      },
       standard: {
-        src: ['<banner:meta.banner>', '<config:rig.build.dest>'],
-        dest: 'lib/croppy.min.js'
+        files: {
+          'dist/croppy.min.js': ['<banner:meta.banner>', 'dist/croppy.js']
+        }
       }
     },
 
     watch: {
-      files: ['<config:jasmine.specs>','src/**/*js'],
-      tasks: 'default'
-    },
-
-    jasmine : {
-      src : 'src/**/*.js',
-      specs : 'spec/**/*.js',
-      helpers : 'spec/helpers/*.js',
-      timeout : 10000,
-      phantomjs : {
-        'ignore-ssl-errors' : true
+      scripts: {
+        files: ['src/*.js'],
+        tasks: ['rig']
       }
     },
 
     jshint: {
+      all: ['dist/croppy.js'],
       options: {
         curly: true,
         eqeqeq: true,
@@ -69,13 +76,10 @@ module.exports = function(grunt) {
         URL:true,
         webkitURL:true
       }
-    },
-    uglify: {}
+    }
   });
 
-  grunt.loadNpmTasks('grunt-jasmine-runner');
-
   // Default task.
-  grunt.registerTask('default', 'lint rig min jasmine');
+  grunt.registerTask('default', ['rig', 'uglify', 'jasmine']);
 
 };

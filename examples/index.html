@@ -35,7 +35,7 @@
   <footer>
   </footer>
 
-  <script src="../lib/croppy.js"></script>
+  <script src="../dist/croppy.js"></script>
   <script>
     var dropZone = document.getElementById('dropzone');
 
@@ -65,7 +65,7 @@
 
       new Croppy(e.dataTransfer.files, {
         max_letterbox_height: 20,
-        portrait : false
+        orientation : "portrait"
       });
 
     }
