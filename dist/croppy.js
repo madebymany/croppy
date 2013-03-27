@@ -60,6 +60,68 @@
   
   
 
+  var CroppyDom = Object.create({
+  
+    removeElement : function(el) {
+      // el.removeEventListener();
+      el.parentNode.removeChild(el);
+    },
+  
+    addEventListeners : function(el, events, useCapture) {
+  
+      if (typeof events === "undefined") { return el; }
+  
+      for (var event in events) {
+        if (!events.hasOwnProperty(event)) {continue;}
+        el.addEventListener(event, events[event], useCapture);
+      }
+  
+      return el;
+    },
+  
+    setAttributes : function(el, attributes) {
+  
+      if (typeof attributes.text !== "undefined") {
+        el.textContent = attributes.text;
+        delete attributes.text;
+      }
+  
+      for (var attribute in attributes) {
+        if (!attributes.hasOwnProperty(attribute) || attribute === "events") {continue;}
+        el.setAttribute(attribute, attributes[attribute]);
+      }
+  
+      return el;
+    },
+  
+    createElements : function(argsList){
+      var fragment = document.createDocumentFragment();
+      argsList.forEach(function(args){
+        fragment.appendChild(this.createElement.apply(this, args));
+      }, this);
+      return fragment;
+    },
+  
+    createElement : function(el, attributes, events) {
+  
+      el = document.createElement(el);
+  
+      if (arguments.length === 1) {
+        return el;
+      }
+  
+      if (typeof attributes === "string") {
+        el.textContent = attributes;
+      } else {
+        this.setAttributes(el, attributes, events);
+      }
+  
+      this.addEventListeners(el, extend(events || {}, attributes.events), false);
+  
+      return el;
+    }
+  });
+
   // Constructor
   var Croppy = function(files, config) {
   
@@ -69,9 +131,6 @@
   
     // override defaults
     extend(this.config, config);
-  
-    // if set, convert aspect ratio to floating point number
-    this._set_config_aspect_ratio(this.config.aspect_ratio);
   
     // set parent dom container
     this._set_config_dom_container(this.config.dom_container);
@@ -103,14 +162,14 @@
      * Default config options
      */
     config : {
-      ui_dimensions : {
-        width : 1000,
-        height : 1000
-      },
-      min_dimensions : {
-        width : 1000,
-        height : 1000
-      },
+      // ui_dimensions : {
+      //   width : 1000,
+      //   height : 1000
+      // },
+      // min_dimensions : {
+      //   width : 1000,
+      //   height : 1000
+      // },
       // optional
       aspect_ratio : '16:9',
       max_letterbox_height : 40,
@@ -142,38 +201,6 @@
       return this.config.dom_container = dom_container;
     },
   
-    /**
-     * determine the aspect ratio
-     *
-     * ### Examples:
-     *
-     *     instance.set_aspect_ratio('16:9');
-     *     // => '0.5625'
-     *
-     * @param {String} string aspect ratio representation
-     * @return {Number} floating point number used to determine aspect ratio
-     * @api private
-     */
-  
-    _set_config_aspect_ratio : function(aspect_ratio) {
-  
-      // if aspect natio is null or undefined (note ==)
-      if (aspect_ratio == null) {
-        return false;
-      }
-  
-      // assume aspect ratio is precalculated if not provided as a string
-      if (aspect_ratio && typeof aspect_ratio === "string") {
-        aspect_ratio = aspect_ratio.split(":");
-        aspect_ratio = {
-          width : parseInt(aspect_ratio[0], 10),
-          height : parseInt(aspect_ratio[1], 10)
-        };
-      }
-  
-      return this.config.aspect_ratio = aspect_ratio;
-    },
-  
     _readFile : function(file) {
   
       if (!window.FileReader) { throw "Browser does not support fileReader - cannot continue"; }
@@ -197,36 +224,81 @@
   
   };
 
-  var Canvas = function(dimensions, aspect_ratio, img) {
-  
-    this._set_canvas_el();
-  
-    /*
-      fix mask size and ratio height
-  
-    */
-    // this._set_ratio_height(aspect_ratio, dimensions.width);
-  
-    // this._set_mask_size(dimensions);
-  
-    this._set_ctx();
-  
-    this._set_origin();
+  var Canvas = function(img, aspect_ratio, width) {
   
     this._set_img(img);
   
-    this.canvas_el.width = dimensions.width;
-    this.canvas_el.height = dimensions.height;
+    this.set_orientaion();
+  
+    this._set_canvas_el(
+      width,
+      this.get_height_from_width(width, this.aspect_ratio_to_float(aspect_ratio))
+    );
+  
+    this.boom = this.image_size();
+  
+    this._set_ctx();
+    this._set_origin();
   
     this._set_mouse_events("on");
   
     this.draw(this.origin);
   
     return this;
-  
   };
   
   Canvas.prototype = {
+  
+    image_size : function() {
+  
+      var image_ratio = this.calculate_aspect_ratio(
+        this.img.width,
+        this.img.height
+      );
+  
+      var height = this.get_height_from_width(this.canvas_el.width, image_ratio);
+      var width  = this.get_width_from_height(this.canvas_el.height, image_ratio);
+  
+      return {
+        width   : (width  < this.canvas_el.width)  ? this.canvas_el.width  : width,
+        height  : (height < this.canvas_el.height) ? this.canvas_el.height : height
+      };
+    },
+  
+    set_orientaion : function() {
+      if (this.img.width >= this.img.height) {
+        return this.orientation = "landscape";
+      }
+      return this.orientation = "portrait";
+    },
+  
+    aspect_ratio_to_float : function(string_ratio) {
+  
+      // require aspect ratio defined as a string
+      if (typeof string_ratio !== "string") { return false; }
+  
+      // convert the string into width and height
+      var ratio_array  = string_ratio.split(":"),
+          width        = parseInt(ratio_array[0], 10),
+          height       = parseInt(ratio_array[1], 10);
+  
+      // reverse the aspect ratio if portrait
+      return this.orientation === "landscape" ?
+        this.calculate_aspect_ratio(width, height) :
+        this.calculate_aspect_ratio(height, width);
+    },
+  
+    calculate_aspect_ratio : function(width, height) {
+      return height / width;
+    },
+  
+    get_height_from_width : function(width, aspect_ratio) {
+      return Math.round(width * aspect_ratio);
+    },
+  
+    get_width_from_height : function(height, aspect_ratio) {
+      return Math.round(height / aspect_ratio);
+    },
   
     // is the user panning (moving the image)
     is_panning : false,
@@ -247,36 +319,21 @@
       return this.ctx;
     },
   
-    _set_canvas_el : function() {
-      this.canvas_el = document.createElement("canvas");
+    _set_canvas_el : function(width, height) {
+      this.canvas_el =  CroppyDom.createElement("canvas", {
+                          width : width,
+                          height : height
+                        });
     },
   
     get_canvas_el : function() {
       return this.canvas_el;
     },
   
-    // _set_ratio_height : function(aspect_ratio, width) {
-    //   this.ratio_height = Math.round(aspect_ratio * width);
-    // },
-  
-    // get_ratio_height : function() {
-    //   return this.ratio_height;
-    // },
-  
-    // _set_mask_size : function(dimensions) {
-    //   var mask_size = (dimensions.height - this.ratio_height) / 2;
-    //   this.mask_size = (mask_size < 0) ? 0 : mask_size;
-    // },
-  
-    // get_mask_size : function() {
-    //   return this.mask_size;
-    // },
-  
     // baseline for origin of the image relative to top left of canvas
     // this will move around every time we redraw the image
     _set_origin : function(origin) {
-      // if origin is null or undefined (deliberate ==)
-      this.origin = (origin != null) ? origin : { x : 0, y : 0 };
+      this.origin = origin || { x : 0, y : 0 };
     },
   
     get_origin : function() {
@@ -322,12 +379,9 @@
       this[method]("mouseup", window);
     },
   
-    draw : function(position) {
+    draw : function(position, width, height) {
   
-      position = position || {
-        x : 0,
-        y : 0
-      };
+      position = position || { x : 0, y : 0 };
   
       var canvas  = this.get_canvas_el(),
           ctx     = this.get_ctx();
@@ -336,7 +390,7 @@
       this._fill_background(this.get_ctx(), canvas.width, canvas.height);
   
       // draw the image
-      ctx.drawImage(this.get_img(), position.x, position.y, canvas.width, canvas.height);
+      ctx.drawImage(this.get_img(), position.x, position.y, this.boom.width, this.boom.height);
   
     },
   
@@ -452,133 +506,82 @@
 
   var Image = function(img) {
   
-    this.img = img;
+    // this.img = img;
   
-    // check for config aspect ratio, or use img dimensions
-    if (!this.aspect_ratio.hasOwnProperty('width') || !this.aspect_ratio.hasOwnProperty('height')) {
-      this.aspect_ratio = {
-        width : img.width,
-        heiht : img.height
-      };
-    }
-  
-    this._set_orientaion();
-  
-    // this.enforce_img_min_size(this.min_dimensions, this.img);
-  
-    this.ui_scale = { width:1000, height:1000};  //this.set_scale(this.ui_width, this.img);
-  
-    this.canvas = new Canvas(img, this.aspect_ratio, img);
-  
-    var ui = new UI();
-  
-    ui.appendChild(this.canvas.get_canvas_el());
-  
-    this.dom_container.appendChild(ui);
+    window.canvas = this.canvas = new Canvas(img, this.aspect_ratio, this.dom_container.offsetWidth);
+    this.render();
   
     return this;
-  
   };
   
   Image.prototype = {
   
-    _set_orientaion : function() {
-      if (this.aspect_ratio.width >= this.aspect_ratio.height) {
-        return this.orientation = "landscape";
-      }
-      return this.orientation = "portrait";
-    },
-  
-    get_relative_dimensions_from_height : function(width) {
-      return this.aspect_ratio[1] / this.aspect_ratio[0] * width;
-    },
-  
-    get_relative_dimensions_from_width : function(height) {
-      return this.aspect_ratio[0] / this.aspect_ratio[1] * height;
-    },
-  
-    enforce_img_min_size : function(dimensions, img) {
-  
-      // minimum image width and height
-      if (img.width < dimensions.width || img.height < Math.floor(this.aspect_ratio * this.max_width)) {
-  
-        var scale = this.set_scale(this.max_width, img, false, false);
-  
-        console.log(img.width, img.height);
-  
-        img.width = scale.width;
-        img.height = scale.height;
-  
-        console.log(img.width, img.height);
-      }
-  
-    },
-  
-    // Calculate scale for resizing the image
-    set_scale : function(max, obj, limit, checkScale) {
-  
-      var width = obj.width,
-          height = obj.height,
-          scale = Math.min(
-            (max) / width,
-            height
-          ),
-          minHeight = ~~(0.5625 * max);
-  
-      // limit allows us to specify whether we want the scale
-      // to be restricted to 100% of the max
-      scale = (limit && scale > 1) ? 1 : scale;
-  
-      width = parseInt(width * scale, 10);
-      height = parseInt(height * scale, 10);
-  
-      // check to see if wee need to increase dimensions to acheive 16 x 9 ratio
-      if (!checkScale && height < minHeight) {
-  
-        width = (minHeight / height) * width;
-        height = minHeight;
-  
-      }
-  
-      return {
-        width : Math.round(width),
-        height : Math.round(height)
-      };
+    render : function() {
+      var ui = new UI();
+      ui.appendChild(this.canvas.get_canvas_el());
+      this.dom_container.appendChild(ui);
     }
+  
+    // enforce_img_min_size : function(dimensions, img) {
+  
+    //   // minimum image width and height
+    //   if (img.width < dimensions.width ||
+    //       img.height < Math.floor(this.aspect_ratio * this.max_width)) {
+  
+    //     var scale = this.set_scale(this.max_width, img, false, false);
+  
+    //     img.width = scale.width;
+    //     img.height = scale.height;
+    //   }
+    // },
+  
+    // // Calculate scale for resizing the image
+    // set_scale : function(max, obj, limit, checkScale) {
+  
+    //   var width = obj.width,
+    //       height = obj.height,
+    //       scale = Math.min(
+    //         (max) / width,
+    //         height
+    //       ),
+    //       minHeight = ~~(0.5625 * max);
+  
+    //   // limit allows us to specify whether we want the scale
+    //   // to be restricted to 100% of the max
+    //   scale = (limit && scale > 1) ? 1 : scale;
+  
+    //   width = parseInt(width * scale, 10);
+    //   height = parseInt(height * scale, 10);
+  
+    //   // check to see if wee need to increase dimensions to acheive 16 x 9 ratio
+    //   if (!checkScale && height < minHeight) {
+  
+    //     width = (minHeight / height) * width;
+    //     height = minHeight;
+  
+    //   }
+  
+    //   return {
+    //     width : Math.round(width),
+    //     height : Math.round(height)
+    //   };
+    // }
   
   };
 
   var UI = function() {
   
     // create a parent wrapper for the canvas
-    var parent = this.createElement("div", {
+    var parent = CroppyDom.createElement("div", {
       "class" : "croppy__parent"
     });
   
-    // create zoom interface buttons
-    var html = this.createElements(this.elements);
+    // create interface buttons
+    var html = CroppyDom.createElements(this.elements);
   
     parent.appendChild(html);
   
     return parent;
-  
-    // parent.className = "crop-parent";
-    // parent.style.width = editorWidth + "px";
-  
-    // // add the parent to the canvas object
-    // canvas.parent = parent;
-  
-    // // main initialisation function
-    // this.start(canvas);
-  
-    // // wrap the canvas in the parent
-    // parent.appendChild(canvas.canvas);
-  
-    // // place the parent in the dom
-    // preview.appendChild(parent);
-  
-    // // for debug purposes
-    // //preview.appendChild(this.cropCanvas.canvas);
   
   };
   
@@ -590,66 +593,7 @@
       ["a", { "class" : "croppy__crop",     "text" : "crop" }],
       ["a", { "class" : "croppy__reset",    "text" : "reset" }],
       ["a", { "class" : "croppy__change",   "text" : "change" }]
-    ],
-  
-    removeElement : function(el) {
-      // el.removeEventListener();
-      el.parentNode.removeChild(el);
-    },
-  
-    addEventListeners : function(el, events, useCapture) {
-  
-      if (typeof events === "undefined") { return el; }
-  
-      for (var event in events) {
-        if (!events.hasOwnProperty(event)) {continue;}
-        el.addEventListener(event, events[event], useCapture);
-      }
-  
-      return el;
-    },
-  
-    setAttributes : function(el, attributes) {
-  
-      if (typeof attributes.text !== "undefined") {
-        el.textContent = attributes.text;
-        delete attributes.text;
-      }
-  
-      for (var attribute in attributes) {
-        if (!attributes.hasOwnProperty(attribute) || attribute === "events") {continue;}
-        el.setAttribute(attribute, attributes[attribute]);
-      }
-  
-      return el;
-    },
-  
-    createElements : function(argsList){
-      var fragment = document.createDocumentFragment();
-      argsList.forEach(function(args){
-        fragment.appendChild(this.createElement.apply(this, args));
-      }, this);
-      return fragment;
-    },
-  
-    createElement : function(el, attributes, events) {
-  
-      el = document.createElement(el);
-  
-      if (arguments.length === 1) {
-        return el;
-      }
-  
-      if (typeof attributes === "string") {
-        el.textContent = attributes;
-      } else {
-        this.setAttributes(el, attributes, events);
-      }
-  
-      this.addEventListeners(el, extend(events || {}, attributes.events), false);
-  
-      return el;
-    }
+    ]
   
   };
 

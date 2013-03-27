@@ -80,6 +80,7 @@ module.exports = function(grunt) {
   });
 
   // Default task.
-  grunt.registerTask('default', ['rig', 'uglify', 'jasmine']);
+  grunt.registerTask('default', ['rig', 'uglify']);
+  grunt.registerTask('test', ['jasmine']);
 
 };

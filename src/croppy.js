@@ -2,6 +2,8 @@
 
   //= croppy.helpers.js
 
+  //= croppy.dom.js
+
   //= croppy.constructor.js
 
   //= croppy.canvas.js

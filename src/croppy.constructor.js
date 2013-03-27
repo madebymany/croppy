@@ -8,9 +8,6 @@ var Croppy = function(files, config) {
   // override defaults
   extend(this.config, config);
 
-  // if set, convert aspect ratio to floating point number
-  this._set_config_aspect_ratio(this.config.aspect_ratio);
-
   // set parent dom container
   this._set_config_dom_container(this.config.dom_container);
 
@@ -41,14 +38,14 @@ Croppy.prototype = {
    * Default config options
    */
   config : {
-    ui_dimensions : {
-      width : 1000,
-      height : 1000
-    },
-    min_dimensions : {
-      width : 1000,
-      height : 1000
-    },
+    // ui_dimensions : {
+    //   width : 1000,
+    //   height : 1000
+    // },
+    // min_dimensions : {
+    //   width : 1000,
+    //   height : 1000
+    // },
     // optional
     aspect_ratio : '16:9',
     max_letterbox_height : 40,
@@ -78,38 +75,6 @@ Croppy.prototype = {
     }
 
     return this.config.dom_container = dom_container;
-  },
-
-  /**
-   * determine the aspect ratio
-   *
-   * ### Examples:
-   *
-   *     instance.set_aspect_ratio('16:9');
-   *     // => '0.5625'
-   *
-   * @param {String} string aspect ratio representation
-   * @return {Number} floating point number used to determine aspect ratio
-   * @api private
-   */
-
-  _set_config_aspect_ratio : function(aspect_ratio) {
-
-    // if aspect natio is null or undefined (note ==)
-    if (aspect_ratio == null) {
-      return false;
-    }
-
-    // assume aspect ratio is precalculated if not provided as a string
-    if (aspect_ratio && typeof aspect_ratio === "string") {
-      aspect_ratio = aspect_ratio.split(":");
-      aspect_ratio = {
-        width : parseInt(aspect_ratio[0], 10),
-        height : parseInt(aspect_ratio[1], 10)
-      };
-    }
-
-    return this.config.aspect_ratio = aspect_ratio;
   },
 
   _readFile : function(file) {
