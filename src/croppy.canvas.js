@@ -9,7 +9,7 @@ var Canvas = function(img, aspect_ratio, width) {
     this.get_height_from_width(width, this.aspect_ratio_to_float(aspect_ratio))
   );
 
-  this.boom = this.image_size();
+  this.image_size = this.set_image_size();
 
   this._set_ctx();
   this._set_origin();
@@ -23,7 +23,7 @@ var Canvas = function(img, aspect_ratio, width) {
 
 Canvas.prototype = {
 
-  image_size : function() {
+  set_image_size : function() {
 
     var image_ratio = this.calculate_aspect_ratio(
       this.img.width,
@@ -164,7 +164,7 @@ Canvas.prototype = {
     this._fill_background(this.get_ctx(), canvas.width, canvas.height);
 
     // draw the image
-    ctx.drawImage(this.get_img(), position.x, position.y, this.boom.width, this.boom.height);
+    ctx.drawImage(this.get_img(), position.x, position.y, this.image_size.width, this.image_size.height);
 
   },
 
@@ -233,32 +233,35 @@ Canvas.prototype = {
     this._check_bounds();
   },
 
-  _calculate_correction : function(scale_offset, canvas_offset, origin) {
+  _calculate_correction : function(image_dimension, canvas_dimension, origin, dir) {
 
-    var difference = (scale_offset + origin);
+    var difference = (image_dimension + origin);
+
+    //console.log(difference, image_dimension, origin, dir);
 
     // too far down or right (snap back to TOP or LHS)
-    if (difference > scale_offset) {
+    if (difference > image_dimension) {
       return -origin;
     }
 
+    // console.log(difference < image_dimension);
     // too far up or left (snap back to BOTTOM or RHS)
-    else if (difference < scale_offset) {
-      return canvas_offset - difference;
+    if (difference < canvas_dimension) {
+      console.log(image_dimension - difference, origin);
+      return Math.ceil(image_dimension - difference);
     }
 
+    return origin;
   },
 
   _check_bounds : function() {
-
-    var image   = this.get_img(),
-        canvas  = this.get_canvas_el();
+    var canvas  = this.get_canvas_el();
         origin  = this.get_origin(),
 
         // calculate the horzontal (x) and vertical (y) correction needed
         // to snap the image back into place
-        x_correction = this._calculate_correction(image.width, canvas.width, origin.x);
-        y_correction = this._calculate_correction(image.height, canvas.height, origin.y);
+        x_correction = this._calculate_correction(this.image_size.width, canvas.width, origin.x, "x");
+        y_correction = this._calculate_correction(this.image_size.height, canvas.height, origin.y, "y");
 
     // unless there is no need to perform a correction
     if (x_correction !== 0 && y_correction !== 0) {
