@@ -12,7 +12,7 @@ var Canvas = function(img, aspect_ratio, width) {
   this.image_size = this.set_image_size();
 
   this._set_ctx();
-  this._set_origin();
+  this._set_coordinate("origin");
 
   this._set_mouse_events("on");
 
@@ -106,8 +106,13 @@ Canvas.prototype = {
 
   // baseline for origin of the image relative to top left of canvas
   // this will move around every time we redraw the image
-  _set_origin : function(origin) {
-    this.origin = origin || { x : 0, y : 0 };
+  _set_coordinate : function(name, coordinate) {
+    this[name] = coordinate || { x : 0, y : 0 };
+  },
+
+  _increment_origin : function(origin) {
+    this.origin.x += (origin.x || 0);
+    this.origin.y += (origin.y || 0);
   },
 
   get_origin : function() {
@@ -164,8 +169,13 @@ Canvas.prototype = {
     this._fill_background(this.get_ctx(), canvas.width, canvas.height);
 
     // draw the image
-    ctx.drawImage(this.get_img(), position.x, position.y, this.image_size.width, this.image_size.height);
-
+    ctx.drawImage(
+      this.get_img(),
+      position.x,
+      position.y,
+      this.image_size.width,
+      this.image_size.height
+    );
   },
 
   _fill_background : function(ctx, width, height) {
@@ -192,6 +202,9 @@ Canvas.prototype = {
   },
 
   _on_mousedown : function(e) {
+    // reset distance moved to 0:0
+    this._set_coordinate("_distance_moved");
+
     // we are panning, start tracking the mouse position
     this.is_panning = true;
 
@@ -210,73 +223,70 @@ Canvas.prototype = {
 
     // Track the difference between the cached start
     // and current mouse position
-    this._set_origin({
+    this._set_coordinate("_distance_moved", {
       x : current_position.x - start_position.x,
       y : current_position.y - start_position.y
     });
 
     // move the image by the difference between the cached start
     // and current mouse position
-    this.draw(this.get_origin());
+    this.draw(this._distance_moved);
 
   },
 
   _on_mouseup : function(e) {
-
     // if we are no longer panning, stop tracking the mouse position
     if (!this.is_panning) { return; }
-
     // we are no longer panning stop tracking the mouse position
     this.is_panning = false;
-
     // check that we haven't overstepped the bounds of the crop area
-    this._check_bounds();
+    this._snap_to_bounds();
   },
 
-  _calculate_correction : function(image_dimension, canvas_dimension, origin, dir) {
+  coordiate_correction : function(image_dimension, canvas_dimension, origin_offset) {
 
-    var difference = (image_dimension + origin);
-
-    //console.log(difference, image_dimension, origin, dir);
+    var difference = (image_dimension + origin_offset);
 
     // too far down or right (snap back to TOP or LHS)
     if (difference > image_dimension) {
-      return -origin;
+      return -origin_offset;
     }
 
-    // console.log(difference < image_dimension);
     // too far up or left (snap back to BOTTOM or RHS)
     if (difference < canvas_dimension) {
-      console.log(image_dimension - difference, origin);
-      return Math.ceil(image_dimension - difference);
+      return ~~(canvas_dimension - difference);
     }
 
-    return origin;
+    return 0;
   },
 
-  _check_bounds : function() {
-    var canvas  = this.get_canvas_el();
-        origin  = this.get_origin(),
+  _update_translate_origin : function(coordinate) {
+    // reset the origin (top left) to the new location (top left) of the image
+    this._increment_origin(coordinate);
+    // set the translate origin to the new position
+    this.get_ctx().translate(coordinate.x, coordinate.y);
+  },
 
-        // calculate the horzontal (x) and vertical (y) correction needed
-        // to snap the image back into place
-        x_correction = this._calculate_correction(this.image_size.width, canvas.width, origin.x, "x");
-        y_correction = this._calculate_correction(this.image_size.height, canvas.height, origin.y, "y");
+  _snap_to_bounds : function() {
+
+    var canvas     = this.get_canvas_el(),
+        image_size = this.image_size;
+
+    this._update_translate_origin(this._distance_moved);
+
+    // calculate the horzontal (x) and vertical (y) correction needed
+    // to snap the image back into place
+    var correction = {
+      x : this.coordiate_correction(image_size.width, canvas.width, this.origin.x),
+      y : this.coordiate_correction(image_size.height, canvas.height, this.origin.y)
+    };
 
     // unless there is no need to perform a correction
-    if (x_correction !== 0 && y_correction !== 0) {
+    if (correction.x === 0 && correction.y === 0) { return; }
 
-      // add the correction to the origin, so that we can keep track of the
-      // position relative to the top left of the canvas
-      this.origin.x += x_correction;
-      this.origin.y += y_correction;
-
-      // redraw the image in the correct position
-      this.draw(this.origin);
-    }
-
+    // redraw the image in the correct position
+    this.draw(correction);
     // set the translate origin to the new position
-    this.get_ctx().translate(this.origin.x, this.origin.y);
+    this._update_translate_origin(correction);
   }
-
 };
