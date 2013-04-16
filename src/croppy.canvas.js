@@ -1,29 +1,21 @@
 var Canvas = function(img, aspect_ratio, width) {
 
   this._set_img(img);
-
-  this.set_orientaion();
-
-  this._set_canvas_el(
-    width,
-    this.get_height_from_width(width, this.aspect_ratio_to_float(aspect_ratio))
-  );
-
-  this.image_size = this.set_image_size();
-
+  this._set_orientaion();
+  this._set_canvas_el(width, this.aspect_ratio_to_float(aspect_ratio));
+  this._set_image_size(img, this.canvas);
   this._set_ctx();
   this._set_coordinate("origin");
-
   this._set_mouse_events("on");
-
   this.draw(this.origin);
 
   return this;
+
 };
 
 Canvas.prototype = {
 
-  set_image_size : function() {
+  _set_image_size : function(img, canvas) {
 
     var image_ratio = this.calculate_aspect_ratio(
       this.img.width,
@@ -33,13 +25,13 @@ Canvas.prototype = {
     var height = this.get_height_from_width(this.canvas_el.width, image_ratio);
     var width  = this.get_width_from_height(this.canvas_el.height, image_ratio);
 
-    return {
+    return this.image_size = {
       width   : (width  < this.canvas_el.width)  ? this.canvas_el.width  : width,
       height  : (height < this.canvas_el.height) ? this.canvas_el.height : height
     };
   },
 
-  set_orientaion : function() {
+  _set_orientaion : function() {
     if (this.img.width >= this.img.height) {
       return this.orientation = "landscape";
     }
@@ -93,11 +85,11 @@ Canvas.prototype = {
     return this.ctx;
   },
 
-  _set_canvas_el : function(width, height) {
-    this.canvas_el =  CroppyDom.createElement("canvas", {
-                        width : width,
-                        height : height
-                      });
+  _set_canvas_el : function(width, aspect_ratio) {
+    return this.canvas_el = CroppyDom.createElement("canvas", {
+      width : width,
+      height : this.get_height_from_width(width, aspect_ratio)
+    });
   },
 
   get_canvas_el : function() {
@@ -239,6 +231,10 @@ Canvas.prototype = {
     if (!this.is_panning) { return; }
     // we are no longer panning stop tracking the mouse position
     this.is_panning = false;
+
+    // the origin has moved relative to the movement of the image
+    this._update_translate_origin(this._distance_moved);
+
     // check that we haven't overstepped the bounds of the crop area
     this._snap_to_bounds();
   },
@@ -272,8 +268,6 @@ Canvas.prototype = {
     var canvas     = this.get_canvas_el(),
         image_size = this.image_size;
 
-    this._update_translate_origin(this._distance_moved);
-
     // calculate the horzontal (x) and vertical (y) correction needed
     // to snap the image back into place
     var correction = {
@@ -289,4 +283,5 @@ Canvas.prototype = {
     // set the translate origin to the new position
     this._update_translate_origin(correction);
   }
+
 };

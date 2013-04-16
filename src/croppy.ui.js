@@ -17,11 +17,11 @@ var UI = function() {
 UI.prototype = UI.fn = {
 
   elements : [
-    ["a", { "class" : "croppy__zoom-in",  "text" : "+" }],
-    ["a", { "class" : "croppy__zoom-out", "text" : "-" }],
-    ["a", { "class" : "croppy__crop",     "text" : "crop" }],
-    ["a", { "class" : "croppy__reset",    "text" : "reset" }],
-    ["a", { "class" : "croppy__change",   "text" : "change" }]
+    ["a", { "class" : "croppy-icon croppy__zoom-in",  "text" : "zoomin" }],
+    ["a", { "class" : "croppy-icon croppy__zoom-out", "text" : "zoomout" }],
+    ["a", { "class" : "croppy-icon croppy__crop",     "text" : "done" }],
+    ["a", { "class" : "croppy-icon croppy__reset",    "text" : "redo" }],
+    ["a", { "class" : "croppy-icon croppy__change",   "text" : "new" }]
   ]
 
 };
