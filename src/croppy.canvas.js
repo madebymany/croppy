@@ -1,9 +1,8 @@
 var Canvas = function(img, aspect_ratio, width) {
 
   this._set_img(img);
-  this._set_orientaion();
   this._set_canvas_el(width, this.aspect_ratio_to_float(aspect_ratio));
-  this._set_image_size(img, this.canvas);
+  this._set_image_size(img, this.get_canvas_el());
   this._set_ctx();
   this._set_coordinate("origin");
   this._set_mouse_events("on");
@@ -15,27 +14,32 @@ var Canvas = function(img, aspect_ratio, width) {
 
 Canvas.prototype = {
 
-  _set_image_size : function(img, canvas) {
+  _set_image_size : function(img, canvas_el) {
 
-    var image_ratio = this.calculate_aspect_ratio(
-      this.img.width,
-      this.img.height
-    );
+    var image_ratio = this.calculate_aspect_ratio(img.width, img.height),
+        height      = this.get_height_from_width(canvas_el.width, image_ratio),
+        width       = this.get_width_from_height(canvas_el.height, image_ratio);
 
-    var height = this.get_height_from_width(this.canvas_el.width, image_ratio);
-    var width  = this.get_width_from_height(this.canvas_el.height, image_ratio);
+    if (width < canvas_el.width) {
+
+      width = canvas_el.width;
+
+      this.first_mask  = [0, 0, width, 40];
+      this.second_mask = [0, (canvas_el.height - 40), width, 40];
+    }
+
+    if (height < canvas_el.height) {
+
+      height = canvas_el.height;
+
+      this.first_mask  = [0, 0, 40, height];
+      this.second_mask = [(canvas_el.width - 40), 0, 40, height];
+    }
 
     return this.image_size = {
-      width   : (width  < this.canvas_el.width)  ? this.canvas_el.width  : width,
-      height  : (height < this.canvas_el.height) ? this.canvas_el.height : height
+      width  : width,
+      height : height
     };
-  },
-
-  _set_orientaion : function() {
-    if (this.img.width >= this.img.height) {
-      return this.orientation = "landscape";
-    }
-    return this.orientation = "portrait";
   },
 
   aspect_ratio_to_float : function(string_ratio) {
@@ -49,7 +53,7 @@ Canvas.prototype = {
         height       = parseInt(ratio_array[1], 10);
 
     // reverse the aspect ratio if portrait
-    return this.orientation === "landscape" ?
+    return (this.img.width >= this.img.height) ?
       this.calculate_aspect_ratio(width, height) :
       this.calculate_aspect_ratio(height, width);
   },
@@ -102,9 +106,9 @@ Canvas.prototype = {
     this[name] = coordinate || { x : 0, y : 0 };
   },
 
-  _increment_origin : function(origin) {
-    this.origin.x += (origin.x || 0);
-    this.origin.y += (origin.y || 0);
+  _increment_origin : function(coorinate) {
+    this.origin.x += (coorinate.x || 0);
+    this.origin.y += (coorinate.y || 0);
   },
 
   get_origin : function() {
@@ -137,7 +141,6 @@ Canvas.prototype = {
   },
 
   _set_mouse_events : function(method) {
-
     [
       "mousedown",
       "mousemove",
@@ -150,31 +153,49 @@ Canvas.prototype = {
     this[method]("mouseup", window);
   },
 
-  draw : function(position, width, height) {
+  draw : function(position) {
 
     position = position || { x : 0, y : 0 };
 
-    var canvas  = this.get_canvas_el(),
-        ctx     = this.get_ctx();
-
     // clear the canvas (otherwise we get psychadelic trails)
-    this._fill_background(this.get_ctx(), canvas.width, canvas.height);
+    this._fill_background();
 
     // draw the image
-    ctx.drawImage(
+    this.get_ctx().drawImage(
       this.get_img(),
       position.x,
       position.y,
       this.image_size.width,
       this.image_size.height
     );
+
+    this._draw_letter_box(this.first_mask, this.second_mask);
   },
 
-  _fill_background : function(ctx, width, height) {
+  // this is the letterbox that appears at the top and bottom
+  // of the image in the editor. Needs to be redrawn every time
+  // the canvas is redrawn
+  _draw_letter_box : function(mask1, mask2) {
+    this._redraw_canvas(function(ctx) {
+      ctx.fillStyle = "rgba(0,0,0,0.6)";
+      ctx.fillRect.apply(ctx, mask1);
+      ctx.fillRect.apply(ctx, mask2);
+    });
+  },
+
+  _fill_background : function() {
+    var canvas = this.get_canvas_el();
+    this._redraw_canvas(function(ctx) {
+      ctx.fillStyle = "rgba(255,255,255,1)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    });
+  },
+
+  _redraw_canvas : function(callback) {
+    var ctx = this.get_ctx();
     ctx.save();
     ctx.setTransform(1,0,0,1,0,0);
-    ctx.fillStyle = "rgba(255,255,255,1)";
-    ctx.fillRect(0, 0, width, height);
+    callback(ctx);
     ctx.restore();
   },
 
