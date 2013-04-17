@@ -228,7 +228,7 @@
   
     this._set_img(img);
     this._set_canvas_el(width, this.aspect_ratio_to_float(aspect_ratio));
-    this._set_image_size(img, this.get_canvas_el());
+    this._set_size_and_mask(img, this.get_canvas_el());
     this._set_ctx();
     this._set_coordinate("origin");
     this._set_mouse_events("on");
@@ -240,32 +240,65 @@
   
   Canvas.prototype = {
   
-    _set_image_size : function(img, canvas_el) {
+    max_mask_size : 160,
+  
+    _set_size_and_mask : function(img, canvas_el) {
   
       var image_ratio = this.calculate_aspect_ratio(img.width, img.height),
           height      = this.get_height_from_width(canvas_el.width, image_ratio),
-          width       = this.get_width_from_height(canvas_el.height, image_ratio);
+          width       = this.get_width_from_height(canvas_el.height, image_ratio),
+          mask_size;
   
       if (width < canvas_el.width) {
-  
-        width = canvas_el.width;
-  
-        this.first_mask  = [0, 0, width, 40];
-        this.second_mask = [0, (canvas_el.height - 40), width, 40];
+        mask_size = this._get_mask_size(height, canvas_el.height);
+        this._set_size_with_horizontal_mask(height, canvas_el, mask_size);
+        this._set_horizontal_mask(this.image_size, canvas_el, mask_size);
+        return;
       }
   
       if (height < canvas_el.height) {
-  
-        height = canvas_el.height;
-  
-        this.first_mask  = [0, 0, 40, height];
-        this.second_mask = [(canvas_el.width - 40), 0, 40, height];
+        mask_size = this._get_mask_size(width, canvas_el.width);
+        this._set_size_with_vertical_mask(width, canvas_el, mask_size, image_ratio);
+        this._set_vertical_mask(this.image_size, canvas_el, mask_size);
+        return;
       }
+    },
   
-      return this.image_size = {
-        width  : width,
+    _set_size_with_horizontal_mask : function(height, canvas_el, mask_size) {
+      canvas_el.height += mask_size;
+      this.image_size = {
+        width : canvas_el.width,
         height : height
       };
+    },
+  
+    _set_horizontal_mask : function(image_size, canvas_el, mask_size) {
+      mask_size = mask_size / 2;
+      this.mask = [
+        [0, 0, image_size.width, mask_size],
+        [0, (canvas_el.height - mask_size), image_size.width, mask_size]
+      ];
+    },
+  
+    _set_size_with_vertical_mask : function(width, canvas_el, mask_size, image_ratio) {
+      var height = canvas_el.height = this.get_height_from_width(canvas_el.width - mask_size, this.aspect_ratio);
+      this.image_size = {
+        width : this.get_width_from_height(height, image_ratio),
+        height : height
+      };
+    },
+  
+    _set_vertical_mask : function(image_size, canvas_el, mask_size) {
+      mask_size = mask_size / 2;
+      this.mask = [
+        [0, 0, mask_size, image_size.height],
+        [(canvas_el.width - mask_size), 0, mask_size, image_size.height]
+      ];
+    },
+  
+    _get_mask_size : function(image_size, canvas_size) {
+      var mask_size = (image_size - canvas_size);
+      return (mask_size > this.max_mask_size) ? this.max_mask_size : mask_size;
     },
   
     aspect_ratio_to_float : function(string_ratio) {
@@ -279,7 +312,7 @@
           height       = parseInt(ratio_array[1], 10);
   
       // reverse the aspect ratio if portrait
-      return (this.img.width >= this.img.height) ?
+      return this.aspect_ratio = (this.img.width >= this.img.height) ?
         this.calculate_aspect_ratio(width, height) :
         this.calculate_aspect_ratio(height, width);
     },
@@ -395,17 +428,17 @@
         this.image_size.height
       );
   
-      this._draw_letter_box(this.first_mask, this.second_mask);
+      this._draw_letter_box(this.mask);
     },
   
     // this is the letterbox that appears at the top and bottom
     // of the image in the editor. Needs to be redrawn every time
     // the canvas is redrawn
-    _draw_letter_box : function(mask1, mask2) {
+    _draw_letter_box : function(mask) {
       this._redraw_canvas(function(ctx) {
         ctx.fillStyle = "rgba(0,0,0,0.6)";
-        ctx.fillRect.apply(ctx, mask1);
-        ctx.fillRect.apply(ctx, mask2);
+        ctx.fillRect.apply(ctx, mask[0]);
+        ctx.fillRect.apply(ctx, mask[1]);
       });
     },
   
