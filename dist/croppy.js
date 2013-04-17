@@ -250,55 +250,55 @@
           mask_size;
   
       if (width < canvas_el.width) {
-        mask_size = this._get_mask_size(height, canvas_el.height);
-        this._set_size_with_horizontal_mask(height, canvas_el, mask_size);
-        this._set_horizontal_mask(this.image_size, canvas_el, mask_size);
+        this._set_mask_size(height, canvas_el.height);
+        this._set_size_with_horizontal_mask(height, canvas_el);
+        this._set_horizontal_mask(this.image_size, canvas_el);
         return;
       }
   
       if (height < canvas_el.height) {
-        mask_size = this._get_mask_size(width, canvas_el.width);
-        this._set_size_with_vertical_mask(width, canvas_el, mask_size, image_ratio);
-        this._set_vertical_mask(this.image_size, canvas_el, mask_size);
+        this._set_mask_size(width, canvas_el.width);
+        this._set_size_with_vertical_mask(width, canvas_el, image_ratio);
+        this._set_vertical_mask(this.image_size, canvas_el);
         return;
       }
     },
   
-    _set_size_with_horizontal_mask : function(height, canvas_el, mask_size) {
-      canvas_el.height += mask_size;
+    _set_size_with_horizontal_mask : function(height, canvas_el) {
+      canvas_el.height += this.max_mask_size;
       this.image_size = {
         width : canvas_el.width,
         height : height
       };
     },
   
-    _set_horizontal_mask : function(image_size, canvas_el, mask_size) {
-      mask_size = mask_size / 2;
+    _set_horizontal_mask : function(image_size, canvas_el) {
+      var mask_size = this.max_mask_size = this.max_mask_size / 2;
       this.mask = [
         [0, 0, image_size.width, mask_size],
         [0, (canvas_el.height - mask_size), image_size.width, mask_size]
       ];
     },
   
-    _set_size_with_vertical_mask : function(width, canvas_el, mask_size, image_ratio) {
-      var height = canvas_el.height = this.get_height_from_width(canvas_el.width - mask_size, this.aspect_ratio);
+    _set_size_with_vertical_mask : function(width, canvas_el, image_ratio) {
+      var height = canvas_el.height = this.get_height_from_width(canvas_el.width - this.max_mask_size, this.aspect_ratio);
       this.image_size = {
         width : this.get_width_from_height(height, image_ratio),
         height : height
       };
     },
   
-    _set_vertical_mask : function(image_size, canvas_el, mask_size) {
-      mask_size = mask_size / 2;
+    _set_vertical_mask : function(image_size, canvas_el) {
+      var mask_size = this.max_mask_size = this.max_mask_size / 2;
       this.mask = [
         [0, 0, mask_size, image_size.height],
         [(canvas_el.width - mask_size), 0, mask_size, image_size.height]
       ];
     },
   
-    _get_mask_size : function(image_size, canvas_size) {
+    _set_mask_size : function(image_size, canvas_size) {
       var mask_size = (image_size - canvas_size);
-      return (mask_size > this.max_mask_size) ? this.max_mask_size : mask_size;
+      this.max_mask_size = (mask_size > this.max_mask_size) ? this.max_mask_size : mask_size;
     },
   
     aspect_ratio_to_float : function(string_ratio) {
