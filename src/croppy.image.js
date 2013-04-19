@@ -12,7 +12,7 @@ Image.prototype = {
 
   render : function() {
     var ui = new UI();
-    ui.appendChild(this.canvas.get_canvas_el());
+    ui.appendChild(this.canvas);
     this.dom_container.appendChild(ui);
   }
 

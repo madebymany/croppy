@@ -1,78 +1,105 @@
+var with_horizontal_letterbox = {
+
+  _reset_image_size_with_letterbox : function() {
+    this._set_mask_size(this.image_size.height, this.canvas_el.height);
+    this.canvas_el.height += this.max_mask_size;
+    this.image_size = {
+      width : this.canvas_el.width,
+      height : this.image_size.height
+    };
+  },
+
+  _set_letterbox_coordinates : function() {
+    this.letterbox_coordinates = [
+      [0, 0, this.image_size.width, this.max_mask_size],
+      [0, (this.canvas_el.height - this.max_mask_size), this.image_size.width, this.max_mask_size]
+    ];
+  },
+
+  _set_crop_window_coordinates : function() {
+    this.crop_window = [
+      0, this.max_mask_size, this.canvas_el.width, (this.canvas_el.height - this.max_mask_size)
+    ];
+  }
+};
+
+var with_vertical_letterbox = {
+
+  _reset_image_size_with_letterbox : function() {
+    this._set_mask_size(this.image_size.width, this.canvas_el.width);
+    var height = this.canvas_el.height = this.get_height_from_width(this.canvas_el.width - this.max_mask_size, this.aspect_ratio);
+    this.image_size = {
+      width : this.get_width_from_height(height, this.image_ratio),
+      height : height
+    };
+  },
+
+  _set_letterbox_coordinates : function() {
+    this.letterbox_coordinates = [
+      [0, 0, this.max_mask_size, this.image_size.height],
+      [(this.canvas_el.width - this.max_mask_size), 0, this.max_mask_size, this.image_size.height]
+    ];
+  },
+
+  _set_crop_window_coordinates : function() {
+    this.crop_window = [
+      this.max_mask_size, 0, (this.canvas_el.width - this.max_mask_size), this.canvas_el.height
+    ];
+  }
+};
+
+
 var Canvas = function(img, aspect_ratio, width) {
 
   this._set_img(img);
   this._set_canvas_el(width, this.aspect_ratio_to_float(aspect_ratio));
-  this._set_size_and_mask(img, this.get_canvas_el());
+
+  this._set_raw_image_size();
+  this._set_mask_mixin();
+  this._reset_image_size_with_letterbox();
+  this._set_half_mask_size();
+  this._set_letterbox_coordinates();
+  this._set_crop_window_coordinates();
+
   this._set_ctx();
   this._set_coordinate("origin");
   this._set_mouse_events("on");
   this.draw(this.origin);
 
-  return this;
-
+  return this.canvas_el;
 };
 
 Canvas.prototype = {
 
   max_mask_size : 160,
 
-  _set_size_and_mask : function(img, canvas_el) {
-
-    var image_ratio = this.calculate_aspect_ratio(img.width, img.height),
-        height      = this.get_height_from_width(canvas_el.width, image_ratio),
-        width       = this.get_width_from_height(canvas_el.height, image_ratio),
-        mask_size;
-
-    if (width < canvas_el.width) {
-      this._set_mask_size(height, canvas_el.height);
-      this._set_size_with_horizontal_mask(height, canvas_el);
-      this._set_horizontal_mask(this.image_size, canvas_el);
+  _set_mask_mixin : function() {
+    if (this.image_size.width < this.canvas_el.width) {
+      extend(this, with_horizontal_letterbox);
       return;
     }
 
-    if (height < canvas_el.height) {
-      this._set_mask_size(width, canvas_el.width);
-      this._set_size_with_vertical_mask(width, canvas_el, image_ratio);
-      this._set_vertical_mask(this.image_size, canvas_el);
+    if (this.image_size.height < this.canvas_el.height) {
+      extend(this, with_vertical_letterbox);
       return;
     }
   },
 
-  _set_size_with_horizontal_mask : function(height, canvas_el) {
-    canvas_el.height += this.max_mask_size;
+  _set_raw_image_size : function() {
+    this.image_ratio = this.calculate_aspect_ratio(this.img.width, this.img.height);
     this.image_size = {
-      width : canvas_el.width,
-      height : height
+      height : this.get_height_from_width(this.canvas_el.width, this.image_ratio),
+      width  : this.get_width_from_height(this.canvas_el.height, this.image_ratio)
     };
-  },
-
-  _set_horizontal_mask : function(image_size, canvas_el) {
-    var mask_size = this.max_mask_size = this.max_mask_size / 2;
-    this.mask = [
-      [0, 0, image_size.width, mask_size],
-      [0, (canvas_el.height - mask_size), image_size.width, mask_size]
-    ];
-  },
-
-  _set_size_with_vertical_mask : function(width, canvas_el, image_ratio) {
-    var height = canvas_el.height = this.get_height_from_width(canvas_el.width - this.max_mask_size, this.aspect_ratio);
-    this.image_size = {
-      width : this.get_width_from_height(height, image_ratio),
-      height : height
-    };
-  },
-
-  _set_vertical_mask : function(image_size, canvas_el) {
-    var mask_size = this.max_mask_size = this.max_mask_size / 2;
-    this.mask = [
-      [0, 0, mask_size, image_size.height],
-      [(canvas_el.width - mask_size), 0, mask_size, image_size.height]
-    ];
   },
 
   _set_mask_size : function(image_size, canvas_size) {
     var mask_size = (image_size - canvas_size);
     this.max_mask_size = (mask_size > this.max_mask_size) ? this.max_mask_size : mask_size;
+  },
+
+  _set_half_mask_size : function() {
+    this.max_mask_size = Math.round(this.max_mask_size / 2);
   },
 
   aspect_ratio_to_float : function(string_ratio) {
@@ -110,16 +137,8 @@ Canvas.prototype = {
     this.img = img;
   },
 
-  get_img : function() {
-    return this.img;
-  },
-
   _set_ctx : function() {
     this.ctx = this.canvas_el.getContext('2d');
-  },
-
-  get_ctx : function() {
-    return this.ctx;
   },
 
   _set_canvas_el : function(width, aspect_ratio) {
@@ -127,10 +146,6 @@ Canvas.prototype = {
       width : width,
       height : this.get_height_from_width(width, aspect_ratio)
     });
-  },
-
-  get_canvas_el : function() {
-    return this.canvas_el;
   },
 
   // baseline for origin of the image relative to top left of canvas
@@ -144,19 +159,15 @@ Canvas.prototype = {
     this.origin.y += (coorinate.y || 0);
   },
 
-  get_origin : function() {
-    return this.origin;
-  },
-
   // convenience function for adding event listeners to the canvas
   on : function(event, el, callback) {
-    (el || this.get_canvas_el())
+    (el || this.canvas_el)
       .addEventListener(event, (callback || this), false);
   },
 
   // convenience function for removing event listeners from the canvas
   off : function(event, el, callback) {
-    (el || this.get_canvas_el())
+    (el || this.canvas_el)
       .removeEventListener(event, (callback || this), false);
   },
 
@@ -194,15 +205,15 @@ Canvas.prototype = {
     this._fill_background();
 
     // draw the image
-    this.get_ctx().drawImage(
-      this.get_img(),
+    this.ctx.drawImage(
+      this.img,
       position.x,
       position.y,
       this.image_size.width,
       this.image_size.height
     );
 
-    this._draw_letter_box(this.mask);
+    this._draw_letter_box(this.letterbox_coordinates);
   },
 
   // this is the letterbox that appears at the top and bottom
@@ -217,7 +228,7 @@ Canvas.prototype = {
   },
 
   _fill_background : function() {
-    var canvas = this.get_canvas_el();
+    var canvas = this.canvas_el;
     this._redraw_canvas(function(ctx) {
       ctx.fillStyle = "rgba(255,255,255,1)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -225,7 +236,7 @@ Canvas.prototype = {
   },
 
   _redraw_canvas : function(callback) {
-    var ctx = this.get_ctx();
+    var ctx = this.ctx;
     ctx.save();
     ctx.setTransform(1,0,0,1,0,0);
     callback(ctx);
@@ -241,10 +252,6 @@ Canvas.prototype = {
 
   _set_start_position : function(e) {
     this.start_position = this.get_mouse_position(e);
-  },
-
-  get_start_position : function(e) {
-    return this.start_position;
   },
 
   _on_mousedown : function(e) {
@@ -265,7 +272,7 @@ Canvas.prototype = {
     if (!this.is_panning) { return; }
 
     var current_position  = this.get_mouse_position(e),
-        start_position    = this.get_start_position();
+        start_position    = this.start_position;
 
     // Track the difference between the cached start
     // and current mouse position
@@ -293,18 +300,18 @@ Canvas.prototype = {
     this._snap_to_bounds();
   },
 
-  coordiate_correction : function(image_dimension, canvas_dimension, origin_offset) {
+  coordiate_correction : function(image_dimension, top_left_offset, bottom_right_offset, origin_offset) {
 
     var difference = (image_dimension + origin_offset);
 
     // too far down or right (snap back to TOP or LHS)
-    if (difference > image_dimension) {
-      return -origin_offset;
+    if (difference > (image_dimension + top_left_offset)) {
+      return -origin_offset + top_left_offset;
     }
 
     // too far up or left (snap back to BOTTOM or RHS)
-    if (difference < canvas_dimension) {
-      return ~~(canvas_dimension - difference);
+    if (difference < bottom_right_offset) {
+      return Math.round(bottom_right_offset - difference);
     }
 
     return 0;
@@ -314,19 +321,16 @@ Canvas.prototype = {
     // reset the origin (top left) to the new location (top left) of the image
     this._increment_origin(coordinate);
     // set the translate origin to the new position
-    this.get_ctx().translate(coordinate.x, coordinate.y);
+    this.ctx.translate(coordinate.x, coordinate.y);
   },
 
   _snap_to_bounds : function() {
 
-    var canvas     = this.get_canvas_el(),
-        image_size = this.image_size;
-
     // calculate the horzontal (x) and vertical (y) correction needed
     // to snap the image back into place
     var correction = {
-      x : this.coordiate_correction(image_size.width, canvas.width, this.origin.x),
-      y : this.coordiate_correction(image_size.height, canvas.height, this.origin.y)
+      x : this.coordiate_correction(this.image_size.width, this.crop_window[0], this.crop_window[2], this.origin.x),
+      y : this.coordiate_correction(this.image_size.height, this.crop_window[1], this.crop_window[3], this.origin.y)
     };
 
     // unless there is no need to perform a correction
@@ -337,5 +341,4 @@ Canvas.prototype = {
     // set the translate origin to the new position
     this._update_translate_origin(correction);
   }
-
 };
