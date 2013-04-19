@@ -1,0 +1,13 @@
+{
+  "name": "croppy",
+  "version": "0.0.0",
+  "main": "\"dist/croppy.min.js",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "components"
+  ],
+  "dependencies": {
+    "lodash": "1.2.0"
+  }
+}
