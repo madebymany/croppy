@@ -1,65 +1,13 @@
-var with_horizontal_letterbox = {
+var Canvas = function(img, config) {
 
-  _reset_image_size_with_letterbox : function() {
-    this._set_mask_size(this.image_size.height, this.canvas_el.height);
-    this.canvas_el.height += this.max_mask_size;
-    this.image_size = {
-      width : this.canvas_el.width,
-      height : this.image_size.height
-    };
-  },
-
-  _set_letterbox_coordinates : function() {
-    this.letterbox_coordinates = [
-      [0, 0, this.image_size.width, this.max_mask_size],
-      [0, (this.canvas_el.height - this.max_mask_size), this.image_size.width, this.max_mask_size]
-    ];
-  },
-
-  _set_crop_window_coordinates : function() {
-    this.crop_window = [
-      0, this.max_mask_size, this.canvas_el.width, (this.canvas_el.height - this.max_mask_size)
-    ];
-  }
-};
-
-var with_vertical_letterbox = {
-
-  _reset_image_size_with_letterbox : function() {
-    this._set_mask_size(this.image_size.width, this.canvas_el.width);
-    var height = this.canvas_el.height = this.get_height_from_width(this.canvas_el.width - this.max_mask_size, this.aspect_ratio);
-    this.image_size = {
-      width : this.get_width_from_height(height, this.image_ratio),
-      height : height
-    };
-  },
-
-  _set_letterbox_coordinates : function() {
-    this.letterbox_coordinates = [
-      [0, 0, this.max_mask_size, this.image_size.height],
-      [(this.canvas_el.width - this.max_mask_size), 0, this.max_mask_size, this.image_size.height]
-    ];
-  },
-
-  _set_crop_window_coordinates : function() {
-    this.crop_window = [
-      this.max_mask_size, 0, (this.canvas_el.width - this.max_mask_size), this.canvas_el.height
-    ];
-  }
-};
-
-
-var Canvas = function(img, aspect_ratio, width) {
+  this.config = extend(this.config, config);
+  this.max_mask_size = this.config.max_mask_size;
 
   this._set_img(img);
-  this._set_canvas_el(width, this.aspect_ratio_to_float(aspect_ratio));
+  this._set_canvas_el(this.config.width, this.aspect_ratio_to_float(this.config.aspect_ratio));
 
   this._set_raw_image_size();
-  this._set_mask_mixin();
-  this._reset_image_size_with_letterbox();
-  this._set_half_mask_size();
-  this._set_letterbox_coordinates();
-  this._set_crop_window_coordinates();
+  this._set_letterbox_mixin();
 
   this._set_ctx();
   this._set_coordinate("origin");
@@ -71,18 +19,39 @@ var Canvas = function(img, aspect_ratio, width) {
 
 Canvas.prototype = {
 
-  max_mask_size : 160,
+  config : {
+    aspect_ratio : '16:9',
+    max_mask_size : 160
+  },
 
-  _set_mask_mixin : function() {
+  _set_letterbox_mixin : function() {
     if (this.image_size.width < this.canvas_el.width) {
       extend(this, with_horizontal_letterbox);
+      this._init_letterbox();
       return;
     }
 
     if (this.image_size.height < this.canvas_el.height) {
       extend(this, with_vertical_letterbox);
+      this._init_letterbox();
       return;
     }
+
+    // no letterbox - image is already at the correct aspect ratio
+    this._set_crop_window_coordinates();
+  },
+
+  _init_letterbox : function() {
+    this._reset_image_size_with_letterbox();
+    this._set_half_mask_size();
+    this._set_letterbox_coordinates();
+    this._set_crop_window_coordinates();
+  },
+
+  _set_crop_window_coordinates : function() {
+    this.crop_window = [
+      0, 0, this.canvas_el.width, this.canvas_el.height
+    ];
   },
 
   _set_raw_image_size : function() {
@@ -220,11 +189,23 @@ Canvas.prototype = {
   // of the image in the editor. Needs to be redrawn every time
   // the canvas is redrawn
   _draw_letter_box : function(mask) {
-    this._redraw_canvas(function(ctx) {
-      ctx.fillStyle = "rgba(0,0,0,0.6)";
-      ctx.fillRect.apply(ctx, mask[0]);
-      ctx.fillRect.apply(ctx, mask[1]);
-    });
+
+    // if the letterbox_coordinates don't exist redefine this function as a noop
+    if (!mask) {
+      this._draw_letter_box = function(){};
+      return;
+    }
+
+    // otherwise redefine the function
+    this._draw_letter_box = function(mask) {
+      this._redraw_canvas(function(ctx) {
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.fillRect.apply(ctx, mask[0]);
+        ctx.fillRect.apply(ctx, mask[1]);
+      });
+    };
+
+    this._draw_letter_box(mask);
   },
 
   _fill_background : function() {

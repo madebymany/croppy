@@ -6,6 +6,7 @@ var UI = function() {
   });
 
   // create interface buttons
+  console.log(this.elements);
   var html = CroppyDom.createElements(this.elements);
 
   parent.appendChild(html);
@@ -17,11 +18,21 @@ var UI = function() {
 UI.prototype = UI.fn = {
 
   elements : [
-    ["a", { "class" : "croppy-icon croppy__zoom-in",  "text" : "zoomin" }],
+    ["a", {
+      "class" : "croppy-icon croppy__zoom-in",
+      "text" : "zoomin",
+      "events": {
+        "click" : "boom"
+      }
+    }],
     ["a", { "class" : "croppy-icon croppy__zoom-out", "text" : "zoomout" }],
     ["a", { "class" : "croppy-icon croppy__crop",     "text" : "done" }],
     ["a", { "class" : "croppy-icon croppy__reset",    "text" : "redo" }],
     ["a", { "class" : "croppy-icon croppy__change",   "text" : "new" }]
-  ]
+  ],
+
+  boom : function() {
+    alert("lol");
+  }
 
 };

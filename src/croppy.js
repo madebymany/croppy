@@ -6,13 +6,11 @@
 
   //= croppy.constructor.js
 
+  //= croppy.letterbox_mixins.js
+
   //= croppy.canvas.js
 
-  //= croppy.image.js
-
   //= croppy.ui.js
-
-  Image.create = create;
 
   window.Croppy = Croppy;
 

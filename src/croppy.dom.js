@@ -21,11 +21,10 @@ var CroppyDom = Object.create({
 
     if (typeof attributes.text !== "undefined") {
       el.textContent = attributes.text;
-      delete attributes.text;
     }
 
     for (var attribute in attributes) {
-      if (!attributes.hasOwnProperty(attribute) || attribute === "events") {continue;}
+      if (!attributes.hasOwnProperty(attribute) || attribute === "events" || attribute === "text") {continue;}
       el.setAttribute(attribute, attributes[attribute]);
     }
 

@@ -24,32 +24,6 @@
     return base;
   };
   
-  var executeRecursive = function(method, argsList, context) {
-    argsList.forEach(function(args){
-      method[Array.isArray(args) ? "apply" : "call"](context, args);
-    });
-  };
-  
-  var create = function(protoProps, staticProps) {
-  
-    var parent = this;
-    var child = function(){ parent.apply(this, arguments); };
-  
-    // Add static properties to the constructor function, if supplied.
-    extend(child, parent, staticProps);
-  
-    // Set the prototype chain to inherit from `parent`
-    child.prototype = Object.create(parent.prototype);
-  
-    // Add prototype properties (instance properties) to the subclass,
-    // if supplied.
-    if (protoProps) {
-      extend(child.prototype, protoProps);
-    }
-  
-    return child;
-  };
-  
   var isArray = function (obj) {
     return obj && obj.constructor == Array;
   };
@@ -83,11 +57,10 @@
   
       if (typeof attributes.text !== "undefined") {
         el.textContent = attributes.text;
-        delete attributes.text;
       }
   
       for (var attribute in attributes) {
-        if (!attributes.hasOwnProperty(attribute) || attribute === "events") {continue;}
+        if (!attributes.hasOwnProperty(attribute) || attribute === "events" || attribute === "text") {continue;}
         el.setAttribute(attribute, attributes[attribute]);
       }
   
@@ -123,28 +96,23 @@
   });
 
   // Constructor
-  var Croppy = function(files, config) {
+  var Croppy = function(files, dom_container, config) {
   
     if (!this._can_cut_the_mustard()) {
       throw "Browser does not cut the mustard - cannot continue";
     }
   
-    // override defaults
-    extend(this.config, config);
-  
     // set parent dom container
-    this._set_config_dom_container(this.config.dom_container);
+    this._set_dom_container(dom_container);
   
-    // create new Image object with instance config options from Image pototype
-    this.Image = Image.create(this.config);
+    // override defaults
+    this.config = extend({width : this.dom_container.offsetWidth}, config);
   
     // Loop through the FileList and render image files as thumbnails.
     [].forEach.call(files, function(file) {
-  
       if (file.type.match('image.*')) {
         this._readFile(file);
       }
-  
     }, this);
   
   };
@@ -158,37 +126,9 @@
       return false;
     },
   
-    /**
-     * Default config options
-     */
-    config : {
-      // ui_dimensions : {
-      //   width : 1000,
-      //   height : 1000
-      // },
-      // min_dimensions : {
-      //   width : 1000,
-      //   height : 1000
-      // },
-      // optional
-      aspect_ratio : '16:9',
-      max_letterbox_height : 40,
-      dom_container : "preview"
-    },
-  
-    /**
-     * Public list of image instances
-     */
     imageList : [],
   
-    /**
-     * sets the dom container - the parent that all dom objects are appended to
-     *
-     * @param {String || Node} id of node or node itself
-     * @return {Node}
-     * @api private
-     */
-    _set_config_dom_container : function(dom_container) {
+    _set_dom_container : function(dom_container) {
   
       if (typeof dom_container === "string") {
         dom_container = document.getElementById(dom_container);
@@ -198,7 +138,7 @@
         throw "Parent dom container is not defined";
       }
   
-      return this.config.dom_container = dom_container;
+      this.dom_container = dom_container;
     },
   
     _readFile : function(file) {
@@ -217,8 +157,8 @@
       img.src = e.target.result;
   
       img.onload = function(){
-        // this.imageList.push(new this.Image(img));
-        console.log(new this.Image(img));
+        this.dom_container.appendChild(new UI());
+        this.dom_container.appendChild(new Canvas(img, this.config));
       }.bind(this);
     }
   
@@ -273,19 +213,17 @@
       ];
     }
   };
+
+  var Canvas = function(img, config) {
   
-  
-  var Canvas = function(img, aspect_ratio, width) {
+    this.config = extend(this.config, config);
+    this.max_mask_size = this.config.max_mask_size;
   
     this._set_img(img);
-    this._set_canvas_el(width, this.aspect_ratio_to_float(aspect_ratio));
+    this._set_canvas_el(this.config.width, this.aspect_ratio_to_float(this.config.aspect_ratio));
   
     this._set_raw_image_size();
-    this._set_mask_mixin();
-    this._reset_image_size_with_letterbox();
-    this._set_half_mask_size();
-    this._set_letterbox_coordinates();
-    this._set_crop_window_coordinates();
+    this._set_letterbox_mixin();
   
     this._set_ctx();
     this._set_coordinate("origin");
@@ -297,18 +235,39 @@
   
   Canvas.prototype = {
   
-    max_mask_size : 160,
+    config : {
+      aspect_ratio : '16:9',
+      max_mask_size : 160
+    },
   
-    _set_mask_mixin : function() {
+    _set_letterbox_mixin : function() {
       if (this.image_size.width < this.canvas_el.width) {
         extend(this, with_horizontal_letterbox);
+        this._init_letterbox();
         return;
       }
   
       if (this.image_size.height < this.canvas_el.height) {
         extend(this, with_vertical_letterbox);
+        this._init_letterbox();
         return;
       }
+  
+      // no letterbox - image is already at the correct aspect ratio
+      this._set_crop_window_coordinates();
+    },
+  
+    _init_letterbox : function() {
+      this._reset_image_size_with_letterbox();
+      this._set_half_mask_size();
+      this._set_letterbox_coordinates();
+      this._set_crop_window_coordinates();
+    },
+  
+    _set_crop_window_coordinates : function() {
+      this.crop_window = [
+        0, 0, this.canvas_el.width, this.canvas_el.height
+      ];
     },
   
     _set_raw_image_size : function() {
@@ -446,11 +405,23 @@
     // of the image in the editor. Needs to be redrawn every time
     // the canvas is redrawn
     _draw_letter_box : function(mask) {
-      this._redraw_canvas(function(ctx) {
-        ctx.fillStyle = "rgba(0,0,0,0.6)";
-        ctx.fillRect.apply(ctx, mask[0]);
-        ctx.fillRect.apply(ctx, mask[1]);
-      });
+  
+      // if the letterbox_coordinates don't exist redefine this function as a noop
+      if (!mask) {
+        this._draw_letter_box = function(){};
+        return;
+      }
+  
+      // otherwise redefine the function
+      this._draw_letter_box = function(mask) {
+        this._redraw_canvas(function(ctx) {
+          ctx.fillStyle = "rgba(0,0,0,0.6)";
+          ctx.fillRect.apply(ctx, mask[0]);
+          ctx.fillRect.apply(ctx, mask[1]);
+        });
+      };
+  
+      this._draw_letter_box(mask);
     },
   
     _fill_background : function() {
@@ -569,71 +540,6 @@
     }
   };
 
-  var Image = function(img) {
-  
-    // this.img = img;
-  
-    window.canvas = this.canvas = new Canvas(img, this.aspect_ratio, this.dom_container.offsetWidth);
-    this.render();
-  
-    return this;
-  };
-  
-  Image.prototype = {
-  
-    render : function() {
-      var ui = new UI();
-      ui.appendChild(this.canvas);
-      this.dom_container.appendChild(ui);
-    }
-  
-    // enforce_img_min_size : function(dimensions, img) {
-  
-    //   // minimum image width and height
-    //   if (img.width < dimensions.width ||
-    //       img.height < Math.floor(this.aspect_ratio * this.max_width)) {
-  
-    //     var scale = this.set_scale(this.max_width, img, false, false);
-  
-    //     img.width = scale.width;
-    //     img.height = scale.height;
-    //   }
-    // },
-  
-    // // Calculate scale for resizing the image
-    // set_scale : function(max, obj, limit, checkScale) {
-  
-    //   var width = obj.width,
-    //       height = obj.height,
-    //       scale = Math.min(
-    //         (max) / width,
-    //         height
-    //       ),
-    //       minHeight = ~~(0.5625 * max);
-  
-    //   // limit allows us to specify whether we want the scale
-    //   // to be restricted to 100% of the max
-    //   scale = (limit && scale > 1) ? 1 : scale;
-  
-    //   width = parseInt(width * scale, 10);
-    //   height = parseInt(height * scale, 10);
-  
-    //   // check to see if wee need to increase dimensions to acheive 16 x 9 ratio
-    //   if (!checkScale && height < minHeight) {
-  
-    //     width = (minHeight / height) * width;
-    //     height = minHeight;
-  
-    //   }
-  
-    //   return {
-    //     width : Math.round(width),
-    //     height : Math.round(height)
-    //   };
-    // }
-  
-  };
-
   var UI = function() {
   
     // create a parent wrapper for the canvas
@@ -642,6 +548,7 @@
     });
   
     // create interface buttons
+    console.log(this.elements);
     var html = CroppyDom.createElements(this.elements);
   
     parent.appendChild(html);
@@ -653,16 +560,24 @@
   UI.prototype = UI.fn = {
   
     elements : [
-      ["a", { "class" : "croppy-icon croppy__zoom-in",  "text" : "zoomin" }],
+      ["a", {
+        "class" : "croppy-icon croppy__zoom-in",
+        "text" : "zoomin",
+        "events": {
+          "click" : "boom"
+        }
+      }],
       ["a", { "class" : "croppy-icon croppy__zoom-out", "text" : "zoomout" }],
       ["a", { "class" : "croppy-icon croppy__crop",     "text" : "done" }],
       ["a", { "class" : "croppy-icon croppy__reset",    "text" : "redo" }],
       ["a", { "class" : "croppy-icon croppy__change",   "text" : "new" }]
-    ]
+    ],
+  
+    boom : function() {
+      alert("lol");
+    }
   
   };
-
-  Image.create = create;
 
   window.Croppy = Croppy;
 
