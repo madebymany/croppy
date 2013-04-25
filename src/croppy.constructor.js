@@ -1,15 +1,15 @@
 // Constructor
-var Croppy = function(files, dom_container, config) {
+var Croppy = function(files, element, config) {
 
   if (!this._can_cut_the_mustard()) {
     throw "Browser does not cut the mustard - cannot continue";
   }
 
   // set parent dom container
-  this._set_dom_container(dom_container);
+  this._set_el(element);
 
   // override defaults
-  this.config = extend({width : this.dom_container.offsetWidth}, config);
+  this.config = _.extend({width : this.$el.width()}, config);
 
   // Loop through the FileList and render image files as thumbnails.
   [].forEach.call(files, function(file) {
@@ -29,20 +29,7 @@ Croppy.prototype = {
     return false;
   },
 
-  imageList : [],
-
-  _set_dom_container : function(dom_container) {
-
-    if (typeof dom_container === "string") {
-      dom_container = document.getElementById(dom_container);
-    }
-
-    if (!dom_container || dom_container.nodeType !== 1) {
-      throw "Parent dom container is not defined";
-    }
-
-    this.dom_container = dom_container;
-  },
+  instances : [],
 
   _readFile : function(file) {
 
@@ -60,9 +47,16 @@ Croppy.prototype = {
     img.src = e.target.result;
 
     img.onload = function(){
-      this.dom_container.appendChild(new UI());
-      this.dom_container.appendChild(new Canvas(img, this.config));
+      var instance = new Wrapper(img, this.config);
+      this.$el.append(instance.$el);
     }.bind(this);
+  },
+
+  _set_el : function(element) {
+    if (!element) {
+      throw "Parent dom container is not defined";
+    }
+    this.$el = (element instanceof $) ? element : $(element);
   }
 
 };

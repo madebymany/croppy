@@ -9,6 +9,7 @@
   ],
   "dependencies": {
     "lodash": "1.2.0",
-    "Eventable": "1.0.0"
+    "Eventable": "1.0.0",
+    "jquery": "2.0.0"
   }
 }

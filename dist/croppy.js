@@ -1,112 +1,17 @@
 (function(document){
 
-  // shallow copy of one object to another
-  
-  var extend = function(base) {
-  
-    var args = [].splice.call(arguments, 1);
-  
-    [].forEach.call(args, function(obj){
-  
-      // purposefully using == to compare null || undefined
-      if (obj == null) {
-        return;
-      }
-  
-      for (var o in obj) {
-        if (obj.hasOwnProperty(o)) {
-          base[o] = obj[o];
-        }
-      }
-  
-    });
-  
-    return base;
-  };
-  
-  var isArray = function (obj) {
-    return obj && obj.constructor == Array;
-  };
-  
-  
-  
-  
-  
-  
-
-  var CroppyDom = Object.create({
-  
-    removeElement : function(el) {
-      // el.removeEventListener();
-      el.parentNode.removeChild(el);
-    },
-  
-    addEventListeners : function(el, events, useCapture) {
-  
-      if (typeof events === "undefined") { return el; }
-  
-      for (var event in events) {
-        if (!events.hasOwnProperty(event)) {continue;}
-        el.addEventListener(event, events[event], useCapture);
-      }
-  
-      return el;
-    },
-  
-    setAttributes : function(el, attributes) {
-  
-      if (typeof attributes.text !== "undefined") {
-        el.textContent = attributes.text;
-      }
-  
-      for (var attribute in attributes) {
-        if (!attributes.hasOwnProperty(attribute) || attribute === "events" || attribute === "text") {continue;}
-        el.setAttribute(attribute, attributes[attribute]);
-      }
-  
-      return el;
-    },
-  
-    createElements : function(argsList){
-      var fragment = document.createDocumentFragment();
-      argsList.forEach(function(args){
-        fragment.appendChild(this.createElement.apply(this, args));
-      }, this);
-      return fragment;
-    },
-  
-    createElement : function(el, attributes, events) {
-  
-      el = document.createElement(el);
-  
-      if (arguments.length === 1) {
-        return el;
-      }
-  
-      if (typeof attributes === "string") {
-        el.textContent = attributes;
-      } else {
-        this.setAttributes(el, attributes, events);
-      }
-  
-      this.addEventListeners(el, extend(events || {}, attributes.events), false);
-  
-      return el;
-    }
-  });
-
   // Constructor
-  var Croppy = function(files, dom_container, config) {
+  var Croppy = function(files, element, config) {
   
     if (!this._can_cut_the_mustard()) {
       throw "Browser does not cut the mustard - cannot continue";
     }
   
     // set parent dom container
-    this._set_dom_container(dom_container);
+    this._set_el(element);
   
     // override defaults
-    this.config = extend({width : this.dom_container.offsetWidth}, config);
+    this.config = _.extend({width : this.$el.width()}, config);
   
     // Loop through the FileList and render image files as thumbnails.
     [].forEach.call(files, function(file) {
@@ -126,20 +31,7 @@
       return false;
     },
   
-    imageList : [],
-  
-    _set_dom_container : function(dom_container) {
-  
-      if (typeof dom_container === "string") {
-        dom_container = document.getElementById(dom_container);
-      }
-  
-      if (!dom_container || dom_container.nodeType !== 1) {
-        throw "Parent dom container is not defined";
-      }
-  
-      this.dom_container = dom_container;
-    },
+    instances : [],
   
     _readFile : function(file) {
   
@@ -157,20 +49,47 @@
       img.src = e.target.result;
   
       img.onload = function(){
-        this.dom_container.appendChild(new UI());
-        this.dom_container.appendChild(new Canvas(img, this.config));
+        var instance = new Wrapper(img, this.config);
+        this.$el.append(instance.$el);
       }.bind(this);
+    },
+  
+    _set_el : function(element) {
+      if (!element) {
+        throw "Parent dom container is not defined";
+      }
+      this.$el = (element instanceof $) ? element : $(element);
     }
   
   };
 
+  var Wrapper = function(img, config) {
+    this.ui = new UI();
+    this.canvas = new Canvas(img, config);
+    this.createEl();
+    this.render();
+    return this;
+  };
+  
+  Wrapper.fn = _.extend(Wrapper.prototype, Eventable, {
+  
+    createEl : function() {
+      this.$el = $('<div>', {"class": "croppy__instance"});
+    },
+  
+    render : function() {
+      this.$el.append(this.ui.$el, this.canvas.$el);
+    }
+  
+  });
+
   var with_horizontal_letterbox = {
   
     _reset_image_size_with_letterbox : function() {
-      this._set_mask_size(this.image_size.height, this.canvas_el.height);
-      this.canvas_el.height += this.max_mask_size;
+      this._set_mask_size(this.image_size.height, this.canvas_size.height);
+      this.canvas_size.height += this.max_mask_size;
       this.image_size = {
-        width : this.canvas_el.width,
+        width : this.canvas_size.width,
         height : this.image_size.height
       };
     },
@@ -178,13 +97,13 @@
     _set_letterbox_coordinates : function() {
       this.letterbox_coordinates = [
         [0, 0, this.image_size.width, this.max_mask_size],
-        [0, (this.canvas_el.height - this.max_mask_size), this.image_size.width, this.max_mask_size]
+        [0, (this.canvas_size.height - this.max_mask_size), this.image_size.width, this.max_mask_size]
       ];
     },
   
     _set_crop_window_coordinates : function() {
       this.crop_window = [
-        0, this.max_mask_size, this.canvas_el.width, (this.canvas_el.height - this.max_mask_size)
+        0, this.max_mask_size, this.canvas_size.width, (this.canvas_size.height - this.max_mask_size)
       ];
     }
   };
@@ -192,8 +111,8 @@
   var with_vertical_letterbox = {
   
     _reset_image_size_with_letterbox : function() {
-      this._set_mask_size(this.image_size.width, this.canvas_el.width);
-      var height = this.canvas_el.height = this.get_height_from_width(this.canvas_el.width - this.max_mask_size, this.aspect_ratio);
+      this._set_mask_size(this.image_size.width, this.canvas_size.width);
+      var height = this.canvas_size.height = this.get_height_from_width(this.canvas_size.width - this.max_mask_size, this.aspect_ratio);
       this.image_size = {
         width : this.get_width_from_height(height, this.image_ratio),
         height : height
@@ -203,24 +122,24 @@
     _set_letterbox_coordinates : function() {
       this.letterbox_coordinates = [
         [0, 0, this.max_mask_size, this.image_size.height],
-        [(this.canvas_el.width - this.max_mask_size), 0, this.max_mask_size, this.image_size.height]
+        [(this.canvas_size.width - this.max_mask_size), 0, this.max_mask_size, this.image_size.height]
       ];
     },
   
     _set_crop_window_coordinates : function() {
       this.crop_window = [
-        this.max_mask_size, 0, (this.canvas_el.width - this.max_mask_size), this.canvas_el.height
+        this.max_mask_size, 0, (this.canvas_size.width - this.max_mask_size), this.canvas_size.height
       ];
     }
   };
 
   var Canvas = function(img, config) {
   
-    this.config = extend(this.config, config);
+    this.config = _.extend(this.config, config);
     this.max_mask_size = this.config.max_mask_size;
   
     this._set_img(img);
-    this._set_canvas_el(this.config.width, this.aspect_ratio_to_float(this.config.aspect_ratio));
+    this._set_el(this.config.width, this.aspect_ratio_to_float(this.config.aspect_ratio));
   
     this._set_raw_image_size();
     this._set_letterbox_mixin();
@@ -229,8 +148,6 @@
     this._set_coordinate("origin");
     this._set_mouse_events("on");
     this.draw(this.origin);
-  
-    return this.canvas_el;
   };
   
   Canvas.prototype = {
@@ -241,14 +158,14 @@
     },
   
     _set_letterbox_mixin : function() {
-      if (this.image_size.width < this.canvas_el.width) {
-        extend(this, with_horizontal_letterbox);
+      if (this.image_size.width < this.canvas_size.width) {
+        _.extend(this, with_horizontal_letterbox);
         this._init_letterbox();
         return;
       }
   
-      if (this.image_size.height < this.canvas_el.height) {
-        extend(this, with_vertical_letterbox);
+      if (this.image_size.height < this.canvas_size.height) {
+        _.extend(this, with_vertical_letterbox);
         this._init_letterbox();
         return;
       }
@@ -266,15 +183,15 @@
   
     _set_crop_window_coordinates : function() {
       this.crop_window = [
-        0, 0, this.canvas_el.width, this.canvas_el.height
+        0, 0, this.canvas_size.width, this.canvas_size.height
       ];
     },
   
     _set_raw_image_size : function() {
       this.image_ratio = this.calculate_aspect_ratio(this.img.width, this.img.height);
       this.image_size = {
-        height : this.get_height_from_width(this.canvas_el.width, this.image_ratio),
-        width  : this.get_width_from_height(this.canvas_el.height, this.image_ratio)
+        height : this.get_height_from_width(this.canvas_size.width, this.image_ratio),
+        width  : this.get_width_from_height(this.canvas_size.height, this.image_ratio)
       };
     },
   
@@ -323,14 +240,20 @@
     },
   
     _set_ctx : function() {
-      this.ctx = this.canvas_el.getContext('2d');
+      this.ctx = this.el.getContext('2d');
     },
   
-    _set_canvas_el : function(width, aspect_ratio) {
-      return this.canvas_el = CroppyDom.createElement("canvas", {
+    _set_el : function(width, aspect_ratio) {
+      this.canvas_size = {
         width : width,
         height : this.get_height_from_width(width, aspect_ratio)
-      });
+      };
+  
+      this.$el = $("<canvas>");
+      this.el  = this.$el[0];
+  
+      this.el.width = this.canvas_size.width;
+      this.el.height = this.canvas_size.height;
     },
   
     // baseline for origin of the image relative to top left of canvas
@@ -346,13 +269,13 @@
   
     // convenience function for adding event listeners to the canvas
     on : function(event, el, callback) {
-      (el || this.canvas_el)
+      (el || this.el)
         .addEventListener(event, (callback || this), false);
     },
   
     // convenience function for removing event listeners from the canvas
     off : function(event, el, callback) {
-      (el || this.canvas_el)
+      (el || this.el)
         .removeEventListener(event, (callback || this), false);
     },
   
@@ -388,7 +311,6 @@
   
       // clear the canvas (otherwise we get psychadelic trails)
       this._fill_background();
-  
       // draw the image
       this.ctx.drawImage(
         this.img,
@@ -398,22 +320,23 @@
         this.image_size.height
       );
   
-      this._draw_letter_box(this.letterbox_coordinates);
+      this._draw_letter_box();
     },
   
     // this is the letterbox that appears at the top and bottom
     // of the image in the editor. Needs to be redrawn every time
     // the canvas is redrawn
-    _draw_letter_box : function(mask) {
+    _draw_letter_box : function() {
   
       // if the letterbox_coordinates don't exist redefine this function as a noop
-      if (!mask) {
+      if (!this.letterbox_coordinates) {
         this._draw_letter_box = function(){};
         return;
       }
   
       // otherwise redefine the function
-      this._draw_letter_box = function(mask) {
+      this._draw_letter_box = function() {
+        var mask = this.letterbox_coordinates;
         this._redraw_canvas(function(ctx) {
           ctx.fillStyle = "rgba(0,0,0,0.6)";
           ctx.fillRect.apply(ctx, mask[0]);
@@ -421,14 +344,14 @@
         });
       };
   
-      this._draw_letter_box(mask);
+      this._draw_letter_box();
     },
   
     _fill_background : function() {
-      var canvas = this.canvas_el;
+      var canvas_size = this.canvas_size;
       this._redraw_canvas(function(ctx) {
         ctx.fillStyle = "rgba(255,255,255,1)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, canvas_size.width, canvas_size.height);
       });
     },
   
@@ -541,43 +464,54 @@
   };
 
   var UI = function() {
-  
-    // create a parent wrapper for the canvas
-    var parent = CroppyDom.createElement("div", {
-      "class" : "croppy__parent"
-    });
-  
-    // create interface buttons
-    console.log(this.elements);
-    var html = CroppyDom.createElements(this.elements);
-  
-    parent.appendChild(html);
-  
-    return parent;
-  
+    this.createEl();
+    this.render();
+    this.delegateEvents();
   };
   
-  UI.prototype = UI.fn = {
+  UI.fn = _.extend(UI.prototype, Eventable, {
   
-    elements : [
-      ["a", {
-        "class" : "croppy-icon croppy__zoom-in",
-        "text" : "zoomin",
-        "events": {
-          "click" : "boom"
-        }
-      }],
-      ["a", { "class" : "croppy-icon croppy__zoom-out", "text" : "zoomout" }],
-      ["a", { "class" : "croppy-icon croppy__crop",     "text" : "done" }],
-      ["a", { "class" : "croppy-icon croppy__reset",    "text" : "redo" }],
-      ["a", { "class" : "croppy-icon croppy__change",   "text" : "new" }]
-    ],
+    delegateEvents: function() {
+      _.forIn(this.items, function(value, key){
+        this.$el.delegate("." + key, "click", this.dispatch_event.bind(this));
+      }, this);
+    },
   
-    boom : function() {
-      alert("lol");
+    items : {
+      "croppy__zoomin"      : "zoomin",
+      "croppy__zoomout"     : "zoomout",
+      "croppy__done"        : "done",
+      "croppy__redo"        : "redo",
+      "croppy__new-image"   : "new_image",
+      "croppy__orientation" : "orientation"
+    },
+  
+    createEl : function() {
+      this.$el = $('<div>', {"class": "croppy__ui"});
+    },
+  
+    render : function() {
+      this.$el.html(this.template());
+      return this;
+    },
+  
+    template : function() {
+      var template = "";
+      _.forIn(this.items, function(value, key){
+        template += "<a class=\"croppy-icon " + key + "\">" + value + "</a>";
+      });
+      return template;
+    },
+  
+    dispatch_event : function(e) {
+      this.trigger("ui:" + e.target.className.match(/croppy__(\S+)/)[1]);
+    },
+  
+    remove : function() {
+      this.$el.undelegate().remove();
     }
   
-  };
+  });
 
   window.Croppy = Croppy;
 

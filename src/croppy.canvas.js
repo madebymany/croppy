@@ -1,10 +1,10 @@
 var Canvas = function(img, config) {
 
-  this.config = extend(this.config, config);
+  this.config = _.extend(this.config, config);
   this.max_mask_size = this.config.max_mask_size;
 
   this._set_img(img);
-  this._set_canvas_el(this.config.width, this.aspect_ratio_to_float(this.config.aspect_ratio));
+  this._set_el(this.config.width, this.aspect_ratio_to_float(this.config.aspect_ratio));
 
   this._set_raw_image_size();
   this._set_letterbox_mixin();
@@ -13,8 +13,6 @@ var Canvas = function(img, config) {
   this._set_coordinate("origin");
   this._set_mouse_events("on");
   this.draw(this.origin);
-
-  return this.canvas_el;
 };
 
 Canvas.prototype = {
@@ -25,14 +23,14 @@ Canvas.prototype = {
   },
 
   _set_letterbox_mixin : function() {
-    if (this.image_size.width < this.canvas_el.width) {
-      extend(this, with_horizontal_letterbox);
+    if (this.image_size.width < this.canvas_size.width) {
+      _.extend(this, with_horizontal_letterbox);
       this._init_letterbox();
       return;
     }
 
-    if (this.image_size.height < this.canvas_el.height) {
-      extend(this, with_vertical_letterbox);
+    if (this.image_size.height < this.canvas_size.height) {
+      _.extend(this, with_vertical_letterbox);
       this._init_letterbox();
       return;
     }
@@ -50,15 +48,15 @@ Canvas.prototype = {
 
   _set_crop_window_coordinates : function() {
     this.crop_window = [
-      0, 0, this.canvas_el.width, this.canvas_el.height
+      0, 0, this.canvas_size.width, this.canvas_size.height
     ];
   },
 
   _set_raw_image_size : function() {
     this.image_ratio = this.calculate_aspect_ratio(this.img.width, this.img.height);
     this.image_size = {
-      height : this.get_height_from_width(this.canvas_el.width, this.image_ratio),
-      width  : this.get_width_from_height(this.canvas_el.height, this.image_ratio)
+      height : this.get_height_from_width(this.canvas_size.width, this.image_ratio),
+      width  : this.get_width_from_height(this.canvas_size.height, this.image_ratio)
     };
   },
 
@@ -107,14 +105,20 @@ Canvas.prototype = {
   },
 
   _set_ctx : function() {
-    this.ctx = this.canvas_el.getContext('2d');
+    this.ctx = this.el.getContext('2d');
   },
 
-  _set_canvas_el : function(width, aspect_ratio) {
-    return this.canvas_el = CroppyDom.createElement("canvas", {
+  _set_el : function(width, aspect_ratio) {
+    this.canvas_size = {
       width : width,
       height : this.get_height_from_width(width, aspect_ratio)
-    });
+    };
+
+    this.$el = $("<canvas>");
+    this.el  = this.$el[0];
+
+    this.el.width = this.canvas_size.width;
+    this.el.height = this.canvas_size.height;
   },
 
   // baseline for origin of the image relative to top left of canvas
@@ -130,13 +134,13 @@ Canvas.prototype = {
 
   // convenience function for adding event listeners to the canvas
   on : function(event, el, callback) {
-    (el || this.canvas_el)
+    (el || this.el)
       .addEventListener(event, (callback || this), false);
   },
 
   // convenience function for removing event listeners from the canvas
   off : function(event, el, callback) {
-    (el || this.canvas_el)
+    (el || this.el)
       .removeEventListener(event, (callback || this), false);
   },
 
@@ -172,7 +176,6 @@ Canvas.prototype = {
 
     // clear the canvas (otherwise we get psychadelic trails)
     this._fill_background();
-
     // draw the image
     this.ctx.drawImage(
       this.img,
@@ -182,22 +185,23 @@ Canvas.prototype = {
       this.image_size.height
     );
 
-    this._draw_letter_box(this.letterbox_coordinates);
+    this._draw_letter_box();
   },
 
   // this is the letterbox that appears at the top and bottom
   // of the image in the editor. Needs to be redrawn every time
   // the canvas is redrawn
-  _draw_letter_box : function(mask) {
+  _draw_letter_box : function() {
 
     // if the letterbox_coordinates don't exist redefine this function as a noop
-    if (!mask) {
+    if (!this.letterbox_coordinates) {
       this._draw_letter_box = function(){};
       return;
     }
 
     // otherwise redefine the function
-    this._draw_letter_box = function(mask) {
+    this._draw_letter_box = function() {
+      var mask = this.letterbox_coordinates;
       this._redraw_canvas(function(ctx) {
         ctx.fillStyle = "rgba(0,0,0,0.6)";
         ctx.fillRect.apply(ctx, mask[0]);
@@ -205,14 +209,14 @@ Canvas.prototype = {
       });
     };
 
-    this._draw_letter_box(mask);
+    this._draw_letter_box();
   },
 
   _fill_background : function() {
-    var canvas = this.canvas_el;
+    var canvas_size = this.canvas_size;
     this._redraw_canvas(function(ctx) {
       ctx.fillStyle = "rgba(255,255,255,1)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, canvas_size.width, canvas_size.height);
     });
   },
 

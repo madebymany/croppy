@@ -36,6 +36,8 @@
   </footer>
 
   <script src="../components/lodash/lodash.js"></script>
+  <script src="../components/jquery/jquery.js"></script>
+  <script src="../components/Eventable/eventable.js"></script>
   <script src="../dist/croppy.js"></script>
   <script>
     var dropZone = document.getElementById('dropzone');
@@ -64,7 +66,7 @@
       e.stopPropagation();
       e.preventDefault();
 
-      new Croppy(e.dataTransfer.files, "preview", {
+      new Croppy(e.dataTransfer.files, "#preview", {
         max_letterbox_height: 20,
         aspect_ratio : "16:9"
       });

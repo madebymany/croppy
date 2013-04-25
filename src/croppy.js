@@ -1,10 +1,8 @@
 (function(document){
 
-  //= croppy.helpers.js
-
-  //= croppy.dom.js
-
   //= croppy.constructor.js
+
+  //= croppy.instance.js
 
   //= croppy.letterbox_mixins.js
 
