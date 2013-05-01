@@ -68,6 +68,7 @@
     this.canvas = new Canvas(img, config);
     this.createEl();
     this.render();
+    this.addListeners();
     return this;
   };
   
@@ -79,6 +80,12 @@
   
     render : function() {
       this.$el.append(this.ui.$el, this.canvas.$el);
+    },
+  
+    addListeners : function() {
+      _.forEach(this.ui.items, function(action){
+        this.listenTo(this.ui, "ui:" +  action, _.bind(this.canvas[action], this.canvas));
+      }, this);
     }
   
   });
@@ -87,7 +94,7 @@
   
     _reset_image_size_with_letterbox : function() {
       this._set_mask_size(this.image_size.height, this.canvas_size.height);
-      this.canvas_size.height += this.max_mask_size;
+      this.el.height = this.canvas_size.height += this.max_mask_size;
       this.image_size = {
         width : this.canvas_size.width,
         height : this.image_size.height
@@ -112,11 +119,12 @@
   
     _reset_image_size_with_letterbox : function() {
       this._set_mask_size(this.image_size.width, this.canvas_size.width);
-      var height = this.canvas_size.height = this.get_height_from_width(this.canvas_size.width - this.max_mask_size, this.aspect_ratio);
+      var height = this.el.height = this.canvas_size.height = this.get_height_from_width(this.canvas_size.width - this.max_mask_size, this.aspect_ratio);
       this.image_size = {
         width : this.get_width_from_height(height, this.image_ratio),
         height : height
       };
+  
     },
   
     _set_letterbox_coordinates : function() {
@@ -139,7 +147,8 @@
     this.max_mask_size = this.config.max_mask_size;
   
     this._set_img(img);
-    this._set_el(this.config.width, this.aspect_ratio_to_float(this.config.aspect_ratio));
+    this._set_aspect_ratio_to_float(this.config.aspect_ratio);
+    this._set_el(this.config.width, this.aspect_ratio);
   
     this._set_raw_image_size();
     this._set_letterbox_mixin();
@@ -151,6 +160,8 @@
   };
   
   Canvas.prototype = {
+  
+    zoom_amount : 10,
   
     config : {
       aspect_ratio : '16:9',
@@ -204,7 +215,7 @@
       this.max_mask_size = Math.round(this.max_mask_size / 2);
     },
   
-    aspect_ratio_to_float : function(string_ratio) {
+    _set_aspect_ratio_to_float : function(string_ratio) {
   
       // require aspect ratio defined as a string
       if (typeof string_ratio !== "string") { return false; }
@@ -215,7 +226,7 @@
           height       = parseInt(ratio_array[1], 10);
   
       // reverse the aspect ratio if portrait
-      return this.aspect_ratio = (this.img.width >= this.img.height) ?
+      this.aspect_ratio = (this.img.width >= this.img.height) ?
         this.calculate_aspect_ratio(width, height) :
         this.calculate_aspect_ratio(height, width);
     },
@@ -454,12 +465,67 @@
       };
   
       // unless there is no need to perform a correction
-      if (correction.x === 0 && correction.y === 0) { return; }
+      if (correction.x === 0 && correction.y === 0) { return false; }
   
       // redraw the image in the correct position
       this.draw(correction);
       // set the translate origin to the new position
       this._update_translate_origin(correction);
+  
+      return true;
+    },
+  
+    _modify_image_size : function(amount) {
+  
+      var width  = this.image_size.width + amount,
+          height = this.get_height_from_width(width, this.image_ratio);
+  
+      if (height < (this.crop_window[3] - this.crop_window[1])) {
+        console.log("too short");
+        return false;
+      }
+  
+      if (height < (this.crop_window[2] - this.crop_window[0])) {
+        console.log("too thin");
+        return false;
+      }
+  
+      this.image_size = {
+        width : width,
+        height : height
+      };
+  
+      return true;
+    },
+  
+    _perform_zoom : function() {
+      if (this._modify_image_size(10)) {
+        this._snap_to_bounds() || this.draw();
+      }
+    },
+  
+    zoomin : function() {
+      this._perform_zoom(this.zoom_amount);
+    },
+  
+    zoomout : function() {
+      this._perform_zoom(-this.zoom_amount);
+    },
+  
+    done : function() {
+      console.log("done");
+    },
+  
+    redo : function() {
+      console.log("redo");
+    },
+  
+    new_image : function() {
+      console.log("new_image");
+    },
+  
+    orientation : function() {
+      console.log("orientation");
     }
   };
 
@@ -472,44 +538,36 @@
   UI.fn = _.extend(UI.prototype, Eventable, {
   
     delegateEvents: function() {
-      _.forIn(this.items, function(value, key){
-        this.$el.delegate("." + key, "click", this.dispatch_event.bind(this));
+      _.forEach(this.items, function(item){
+        this.$el.delegate(".croppy__" + item, "click", this.dispatch_event.bind(this));
       }, this);
     },
   
-    items : {
-      "croppy__zoomin"      : "zoomin",
-      "croppy__zoomout"     : "zoomout",
-      "croppy__done"        : "done",
-      "croppy__redo"        : "redo",
-      "croppy__new-image"   : "new_image",
-      "croppy__orientation" : "orientation"
-    },
+    items : ["zoomin", "zoomout", "done", "redo", "new_image", "orientation"],
   
     createEl : function() {
       this.$el = $('<div>', {"class": "croppy__ui"});
     },
   
     render : function() {
-      this.$el.html(this.template());
+      var template = "";
+      _.forEach(this.items, function(item) {
+        template += this.template({ "action" : item });
+      }, this);
+      this.$el.html(template);
       return this;
     },
   
-    template : function() {
-      var template = "";
-      _.forIn(this.items, function(value, key){
-        template += "<a class=\"croppy-icon " + key + "\">" + value + "</a>";
-      });
-      return template;
-    },
-  
     dispatch_event : function(e) {
-      this.trigger("ui:" + e.target.className.match(/croppy__(\S+)/)[1]);
+      this.trigger("ui:" + e.target.dataset.action);
     },
   
     remove : function() {
       this.$el.undelegate().remove();
-    }
+    },
+  
+  
+    template : _.template('<a class="croppy-icon croppy__<%=action%>" data-action="<%=action%>"><%=action%></a>')
   
   });
 

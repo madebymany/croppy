@@ -2,7 +2,7 @@ var with_horizontal_letterbox = {
 
   _reset_image_size_with_letterbox : function() {
     this._set_mask_size(this.image_size.height, this.canvas_size.height);
-    this.canvas_size.height += this.max_mask_size;
+    this.el.height = this.canvas_size.height += this.max_mask_size;
     this.image_size = {
       width : this.canvas_size.width,
       height : this.image_size.height
@@ -27,11 +27,12 @@ var with_vertical_letterbox = {
 
   _reset_image_size_with_letterbox : function() {
     this._set_mask_size(this.image_size.width, this.canvas_size.width);
-    var height = this.canvas_size.height = this.get_height_from_width(this.canvas_size.width - this.max_mask_size, this.aspect_ratio);
+    var height = this.el.height = this.canvas_size.height = this.get_height_from_width(this.canvas_size.width - this.max_mask_size, this.aspect_ratio);
     this.image_size = {
       width : this.get_width_from_height(height, this.image_ratio),
       height : height
     };
+
   },
 
   _set_letterbox_coordinates : function() {

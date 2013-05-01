@@ -4,7 +4,8 @@ var Canvas = function(img, config) {
   this.max_mask_size = this.config.max_mask_size;
 
   this._set_img(img);
-  this._set_el(this.config.width, this.aspect_ratio_to_float(this.config.aspect_ratio));
+  this._set_aspect_ratio_to_float(this.config.aspect_ratio);
+  this._set_el(this.config.width, this.aspect_ratio);
 
   this._set_raw_image_size();
   this._set_letterbox_mixin();
@@ -16,6 +17,8 @@ var Canvas = function(img, config) {
 };
 
 Canvas.prototype = {
+
+  zoom_amount : 10,
 
   config : {
     aspect_ratio : '16:9',
@@ -69,7 +72,7 @@ Canvas.prototype = {
     this.max_mask_size = Math.round(this.max_mask_size / 2);
   },
 
-  aspect_ratio_to_float : function(string_ratio) {
+  _set_aspect_ratio_to_float : function(string_ratio) {
 
     // require aspect ratio defined as a string
     if (typeof string_ratio !== "string") { return false; }
@@ -80,7 +83,7 @@ Canvas.prototype = {
         height       = parseInt(ratio_array[1], 10);
 
     // reverse the aspect ratio if portrait
-    return this.aspect_ratio = (this.img.width >= this.img.height) ?
+    this.aspect_ratio = (this.img.width >= this.img.height) ?
       this.calculate_aspect_ratio(width, height) :
       this.calculate_aspect_ratio(height, width);
   },
@@ -319,11 +322,66 @@ Canvas.prototype = {
     };
 
     // unless there is no need to perform a correction
-    if (correction.x === 0 && correction.y === 0) { return; }
+    if (correction.x === 0 && correction.y === 0) { return false; }
 
     // redraw the image in the correct position
     this.draw(correction);
     // set the translate origin to the new position
     this._update_translate_origin(correction);
+
+    return true;
+  },
+
+  _modify_image_size : function(amount) {
+
+    var width  = this.image_size.width + amount,
+        height = this.get_height_from_width(width, this.image_ratio);
+
+    if (height < (this.crop_window[3] - this.crop_window[1])) {
+      console.log("too short");
+      return false;
+    }
+
+    if (height < (this.crop_window[2] - this.crop_window[0])) {
+      console.log("too thin");
+      return false;
+    }
+
+    this.image_size = {
+      width : width,
+      height : height
+    };
+
+    return true;
+  },
+
+  _perform_zoom : function() {
+    if (this._modify_image_size(10)) {
+      this._snap_to_bounds() || this.draw();
+    }
+  },
+
+  zoomin : function() {
+    this._perform_zoom(this.zoom_amount);
+  },
+
+  zoomout : function() {
+    this._perform_zoom(-this.zoom_amount);
+  },
+
+  done : function() {
+    console.log("done");
+  },
+
+  redo : function() {
+    console.log("redo");
+  },
+
+  new_image : function() {
+    console.log("new_image");
+  },
+
+  orientation : function() {
+    console.log("orientation");
   }
 };

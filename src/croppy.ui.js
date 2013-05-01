@@ -7,43 +7,35 @@ var UI = function() {
 UI.fn = _.extend(UI.prototype, Eventable, {
 
   delegateEvents: function() {
-    _.forIn(this.items, function(value, key){
-      this.$el.delegate("." + key, "click", this.dispatch_event.bind(this));
+    _.forEach(this.items, function(item){
+      this.$el.delegate(".croppy__" + item, "click", this.dispatch_event.bind(this));
     }, this);
   },
 
-  items : {
-    "croppy__zoomin"      : "zoomin",
-    "croppy__zoomout"     : "zoomout",
-    "croppy__done"        : "done",
-    "croppy__redo"        : "redo",
-    "croppy__new-image"   : "new_image",
-    "croppy__orientation" : "orientation"
-  },
+  items : ["zoomin", "zoomout", "done", "redo", "new_image", "orientation"],
 
   createEl : function() {
     this.$el = $('<div>', {"class": "croppy__ui"});
   },
 
   render : function() {
-    this.$el.html(this.template());
+    var template = "";
+    _.forEach(this.items, function(item) {
+      template += this.template({ "action" : item });
+    }, this);
+    this.$el.html(template);
     return this;
   },
 
-  template : function() {
-    var template = "";
-    _.forIn(this.items, function(value, key){
-      template += "<a class=\"croppy-icon " + key + "\">" + value + "</a>";
-    });
-    return template;
-  },
-
   dispatch_event : function(e) {
-    this.trigger("ui:" + e.target.className.match(/croppy__(\S+)/)[1]);
+    this.trigger("ui:" + e.target.dataset.action);
   },
 
   remove : function() {
     this.$el.undelegate().remove();
-  }
+  },
+
+
+  template : _.template('<a class="croppy-icon croppy__<%=action%>" data-action="<%=action%>"><%=action%></a>')
 
 });

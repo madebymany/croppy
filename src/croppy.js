@@ -2,7 +2,7 @@
 
   //= croppy.constructor.js
 
-  //= croppy.instance.js
+  //= croppy.wrapper.js
 
   //= croppy.letterbox_mixins.js
 
