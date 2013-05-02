@@ -1,17 +1,14 @@
 var Canvas = function(img, config) {
 
   this.config = _.extend(this.config, config);
-  this.max_mask_size = this.config.max_mask_size;
 
   this._set_img(img);
-  this._set_aspect_ratio_to_float(this.config.aspect_ratio);
-  this._set_el(this.config.width, this.aspect_ratio);
+  this._set_el();
+  this._set_orientation_from_config();
 
-  this._set_raw_image_size();
-  this._set_letterbox_mixin();
+  this._set_common_properties();
 
   this._set_ctx();
-  this._set_coordinate("origin");
   this._set_mouse_events("on");
   this.draw(this.origin);
 };
@@ -25,39 +22,69 @@ Canvas.prototype = {
     max_mask_size : 160
   },
 
-  _set_letterbox_mixin : function() {
-    if (this.image_size.width < this.canvas_size.width) {
-      _.extend(this, with_horizontal_letterbox);
-      this._init_letterbox();
-      return;
-    }
-
-    if (this.image_size.height < this.canvas_size.height) {
-      _.extend(this, with_vertical_letterbox);
-      this._init_letterbox();
-      return;
-    }
-
-    // no letterbox - image is already at the correct aspect ratio
+  _set_common_properties : function() {
+    this._set_aspect_ratio_from_config();
+    this._set_canvas_size();
+    this._set_image_ratio();
+    this._set_letterbox_mixin();
     this._set_crop_window_coordinates();
+    this._set_coordinate("origin");
+  },
+
+  _set_orientation_from_config : function() {
+
+    if (_.isString(this.config.orientation)) {
+      this.orientation = orientation;
+      return;
+    }
+
+    if (this.img.width >= this.img.height) {
+      this.orientation = "landscape";
+      return;
+    }
+
+    this.orientation = "portrait";
+  },
+
+  _swap_orientation : function() {
+    this.orientation = (this.orientation === "landscape") ? "portrait" : "landscape";
   },
 
   _init_letterbox : function() {
-    this._reset_image_size_with_letterbox();
-    this._set_half_mask_size();
+    this._set_mask_size.apply(this, arguments);
+    this._reset_canvas_height_with_letterbox();
+    this._set_image_size();
     this._set_letterbox_coordinates();
-    this._set_crop_window_coordinates();
   },
 
-  _set_crop_window_coordinates : function() {
-    this.crop_window = [
-      0, 0, this.canvas_size.width, this.canvas_size.height
-    ];
+  _set_letterbox_mixin : function() {
+
+    var image_size = this._return_raw_image_size();
+
+    if (image_size.width < this.canvas_size.width) {
+      _.extend(this, letterbox.horizontal);
+      this._init_letterbox(image_size.height, this.canvas_size.height);
+      return;
+    }
+
+    if (image_size.height < this.canvas_size.height) {
+      _.extend(this, letterbox.vertical);
+      this._init_letterbox(image_size.width, this.canvas_size.width);
+      return;
+    }
+
+    _.extend(this, letterbox.none);
+    this._set_image_size();
   },
 
-  _set_raw_image_size : function() {
+  _set_image_ratio : function() {
     this.image_ratio = this.calculate_aspect_ratio(this.img.width, this.img.height);
-    this.image_size = {
+  },
+
+  _return_raw_image_size : function() {
+    // if (!_.isUndefined(this.image_size)) && this.image_size.width >= this.canvas_size.width) {
+    // }
+    return {
       height : this.get_height_from_width(this.canvas_size.width, this.image_ratio),
       width  : this.get_width_from_height(this.canvas_size.height, this.image_ratio)
     };
@@ -65,25 +92,28 @@ Canvas.prototype = {
 
   _set_mask_size : function(image_size, canvas_size) {
     var mask_size = (image_size - canvas_size);
-    this.max_mask_size = (mask_size > this.max_mask_size) ? this.max_mask_size : mask_size;
+    this.max_mask_size = (mask_size > this.config.max_mask_size) ? this.config.max_mask_size : mask_size;
+    this._set_half_mask_size();
   },
 
   _set_half_mask_size : function() {
-    this.max_mask_size = Math.round(this.max_mask_size / 2);
+    this.half_mask_size = Math.round(this.max_mask_size / 2);
   },
 
-  _set_aspect_ratio_to_float : function(string_ratio) {
+  _set_aspect_ratio_from_config : function() {
+
+    var aspect_ratio = this.config.aspect_ratio;
 
     // require aspect ratio defined as a string
-    if (typeof string_ratio !== "string") { return false; }
+    if (typeof aspect_ratio !== "string") { return false; }
 
     // convert the string into width and height
-    var ratio_array  = string_ratio.split(":"),
+    var ratio_array  = aspect_ratio.split(":"),
         width        = parseInt(ratio_array[0], 10),
         height       = parseInt(ratio_array[1], 10);
 
     // reverse the aspect ratio if portrait
-    this.aspect_ratio = (this.img.width >= this.img.height) ?
+    this.aspect_ratio = (this.orientation === "landscape") ?
       this.calculate_aspect_ratio(width, height) :
       this.calculate_aspect_ratio(height, width);
   },
@@ -111,15 +141,16 @@ Canvas.prototype = {
     this.ctx = this.el.getContext('2d');
   },
 
-  _set_el : function(width, aspect_ratio) {
-    this.canvas_size = {
-      width : width,
-      height : this.get_height_from_width(width, aspect_ratio)
-    };
-
+  _set_el : function() {
     this.$el = $("<canvas>");
     this.el  = this.$el[0];
+  },
 
+  _set_canvas_size : function() {
+    this.canvas_size = {
+      width : this.config.width,
+      height : this.get_height_from_width(this.config.width, this.aspect_ratio)
+    };
     this.el.width = this.canvas_size.width;
     this.el.height = this.canvas_size.height;
   },
@@ -252,7 +283,6 @@ Canvas.prototype = {
     // cache the start position,
     // so we can track the mouse move relative to this point
     this._set_start_position(e);
-
   },
 
   _on_mousemove : function(e) {
@@ -280,7 +310,7 @@ Canvas.prototype = {
     if (!this.is_panning) { return; }
     // we are no longer panning stop tracking the mouse position
     this.is_panning = false;
-
+    console.log(this._distance_moved);
     // the origin has moved relative to the movement of the image
     this._update_translate_origin(this._distance_moved);
 
@@ -332,56 +362,61 @@ Canvas.prototype = {
     return true;
   },
 
-  _modify_image_size : function(amount) {
+  _is_smaller_than_crop_window : function(image_size) {
+    // too short
+    if (image_size.height < (this.crop_window[3] - this.crop_window[1])) {
+      return true;
+    }
+    // too thin
+    if (image_size.width < (this.crop_window[2] - this.crop_window[0])) {
+      return true;
+    }
+    return false;
+  },
 
-    var width  = this.image_size.width + amount,
+  _modify_image_size : function(image_size) {
+    if (this._is_smaller_than_crop_window(image_size)) {
+      return false;
+    }
+    this.image_size = image_size;
+  },
+
+  _perform_zoom : function(zoom_amount) {
+    var width  = this.image_size.width + zoom_amount,
         height = this.get_height_from_width(width, this.image_ratio);
 
-    if (height < (this.crop_window[3] - this.crop_window[1])) {
-      console.log("too short");
-      return false;
-    }
-
-    if (height < (this.crop_window[2] - this.crop_window[0])) {
-      console.log("too thin");
-      return false;
-    }
-
-    this.image_size = {
-      width : width,
-      height : height
-    };
-
-    return true;
+    this._modify_image_size({ width : width, height : height });
+    this._snap_to_bounds() || this.draw();
   },
 
-  _perform_zoom : function() {
-    if (this._modify_image_size(10)) {
+  actions : {
+    zoomin : function() {
+      this._perform_zoom(this.zoom_amount);
+    },
+
+    zoomout : function() {
+      this._perform_zoom(-this.zoom_amount);
+    },
+
+    done : function() {
+      console.log("done");
+    },
+
+    redo : function() {
+      console.log("redo");
+    },
+
+    new_image : function() {
+      console.log("new_image");
+    },
+
+    orientation : function() {
+      this._swap_orientation();
+      var cached_image_size = this.image_size;
+      this._set_common_properties();
+      this._modify_image_size(cached_image_size);
       this._snap_to_bounds() || this.draw();
     }
-  },
-
-  zoomin : function() {
-    this._perform_zoom(this.zoom_amount);
-  },
-
-  zoomout : function() {
-    this._perform_zoom(-this.zoom_amount);
-  },
-
-  done : function() {
-    console.log("done");
-  },
-
-  redo : function() {
-    console.log("redo");
-  },
-
-  new_image : function() {
-    console.log("new_image");
-  },
-
-  orientation : function() {
-    console.log("orientation");
   }
+
 };

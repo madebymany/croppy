@@ -19,7 +19,7 @@ Wrapper.fn = _.extend(Wrapper.prototype, Eventable, {
 
   addListeners : function() {
     _.forEach(this.ui.items, function(action){
-      this.listenTo(this.ui, "ui:" +  action, _.bind(this.canvas[action], this.canvas));
+      this.listenTo(this.ui, "ui:" +  action, _.bind(this.canvas.actions[action], this.canvas));
     }, this);
   }
 
