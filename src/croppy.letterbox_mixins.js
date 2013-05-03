@@ -14,8 +14,8 @@ var letterbox = {
 
     _set_letterbox_coordinates : function() {
       this.letterbox_coordinates = [
-        [0, 0, this.image_size.width, this.half_mask_size],
-        [0, (this.canvas_size.height - this.half_mask_size), this.image_size.width, this.half_mask_size]
+        [0, 0, this.canvas_size.width, this.half_mask_size],
+        [0, (this.canvas_size.height - this.half_mask_size), this.canvas_size.width, this.half_mask_size]
       ];
     },
 
@@ -42,8 +42,8 @@ var letterbox = {
 
     _set_letterbox_coordinates : function() {
       this.letterbox_coordinates = [
-        [0, 0, this.half_mask_size, this.image_size.height],
-        [(this.canvas_size.width - this.half_mask_size), 0, this.half_mask_size, this.image_size.height]
+        [0, 0, this.half_mask_size, this.canvas_size.height],
+        [(this.canvas_size.width - this.half_mask_size), 0, this.half_mask_size, this.canvas_size.height]
       ];
     },
 
@@ -62,7 +62,7 @@ var letterbox = {
     },
 
     _set_image_size : function() {
-      this.image_size = this._return_raw_image_size();
+      this._set_raw_image_size();
     }
   }
 };

@@ -27,6 +27,7 @@ Canvas.prototype = {
     this._set_canvas_size();
     this._set_image_ratio();
     this._set_letterbox_mixin();
+    this._set_image_size();
     this._set_crop_window_coordinates();
     this._set_coordinate("origin");
   },
@@ -53,23 +54,22 @@ Canvas.prototype = {
   _init_letterbox : function() {
     this._set_mask_size.apply(this, arguments);
     this._reset_canvas_height_with_letterbox();
-    this._set_image_size();
     this._set_letterbox_coordinates();
   },
 
   _set_letterbox_mixin : function() {
 
-    var image_size = this._return_raw_image_size();
+    this._set_raw_image_size();
 
-    if (image_size.width < this.canvas_size.width) {
+    if (this.image_size.width < this.canvas_size.width) {
       _.extend(this, letterbox.horizontal);
-      this._init_letterbox(image_size.height, this.canvas_size.height);
+      this._init_letterbox(this.image_size.height, this.canvas_size.height);
       return;
     }
 
-    if (image_size.height < this.canvas_size.height) {
+    if (this.image_size.height < this.canvas_size.height) {
       _.extend(this, letterbox.vertical);
-      this._init_letterbox(image_size.width, this.canvas_size.width);
+      this._init_letterbox(this.image_size.width, this.canvas_size.width);
       return;
     }
 
@@ -81,10 +81,8 @@ Canvas.prototype = {
     this.image_ratio = this.calculate_aspect_ratio(this.img.width, this.img.height);
   },
 
-  _return_raw_image_size : function() {
-    // if (!_.isUndefined(this.image_size)) && this.image_size.width >= this.canvas_size.width) {
-    // }
-    return {
+  _set_raw_image_size : function() {
+    this.image_size = {
       height : this.get_height_from_width(this.canvas_size.width, this.image_ratio),
       width  : this.get_width_from_height(this.canvas_size.height, this.image_ratio)
     };
@@ -310,7 +308,7 @@ Canvas.prototype = {
     if (!this.is_panning) { return; }
     // we are no longer panning stop tracking the mouse position
     this.is_panning = false;
-    console.log(this._distance_moved);
+
     // the origin has moved relative to the movement of the image
     this._update_translate_origin(this._distance_moved);
 
