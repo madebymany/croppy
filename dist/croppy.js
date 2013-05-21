@@ -163,6 +163,7 @@
     this.config = _.extend(this.config, config);
   
     this.zoom_level = 0;
+    this.rotation_angle = 0;
   
     this._set_img(img);
     this._set_el();
@@ -172,7 +173,7 @@
   
     this._set_ctx();
     this._set_mouse_events("on");
-    this.draw(this.origin);
+    this.draw_with_rotation(this.origin);
   };
   
   Canvas.prototype = {
@@ -465,7 +466,7 @@
   
       // move the image by the difference between the cached start
       // and current mouse position
-      this.draw(this._distance_moved);
+      this.draw_with_rotation(this._distance_moved);
   
     },
   
@@ -519,7 +520,7 @@
       if (correction.x === 0 && correction.y === 0) { return false; }
   
       // redraw the image in the correct position
-      this.draw(correction);
+      this.draw_with_rotation(correction);
       // set the translate origin to the new position
       this._update_translate_origin(correction);
   
@@ -550,7 +551,38 @@
           height = this.get_height_from_width(width, this.image_ratio);
   
       this._modify_image_size({ width : width, height : height });
-      this._snap_to_bounds() || this.draw();
+      this._snap_to_bounds() || this.draw_with_rotation();
+    },
+  
+    _increment_rotation_angle : function() {
+      this.rotation_angle += 90;
+      this.rotation_angle = (this.rotation_angle >= 360) ? 0 : this.rotation_angle;
+    },
+  
+    draw_with_rotation : function(position) {
+  
+      position = position || { x : 0, y : 0 };
+  
+      if (this.rotation_angle === 0) {
+        this.draw(position);
+        return;
+      }
+  
+      // save the current co-ordinate system
+      this.ctx.save();
+      // move to the middle of where we want to draw our image
+      this.ctx.translate((this.image_size.width/2),(this.image_size.height/2));
+      // rotate around that point, converting our
+      // angle from degrees to radians
+      this.ctx.rotate(this.rotation_angle * Math.PI/180);
+      // draw it up and to the left by half the width
+      // and height of the image
+      this.draw({
+        x : position.x - (this.image_size.width/2),
+        y : position.y - (this.image_size.height/2)
+      });
+      // and restore the co-ords to how they were when we began
+      this.ctx.restore();
     },
   
     actions : {
@@ -570,7 +602,8 @@
       },
   
       redo : function() {
-        console.log("redo");
+        this._increment_rotation_angle();
+        this.draw_with_rotation();
       },
   
       new_image : function() {
@@ -581,7 +614,7 @@
         this._swap_orientation();
         this._set_common_properties();
         this._perform_zoom();
-        this._snap_to_bounds() || this.draw();
+        this._snap_to_bounds() || this.draw_with_rotation();
       }
     }
   
