@@ -3,6 +3,8 @@
   // Constructor
   var Croppy = function(files, element, config) {
   
+    this.instances = [];
+  
     if (!this._can_cut_the_mustard()) {
       throw "Browser does not cut the mustard - cannot continue";
     }
@@ -31,8 +33,6 @@
       return false;
     },
   
-    instances : [],
-  
     _readFile : function(file) {
   
       if (!window.FileReader) { throw "Browser does not support fileReader - cannot continue"; }
@@ -51,6 +51,7 @@
       img.onload = function(){
         var instance = new Wrapper(img, this.config);
         this.$el.append(instance.$el);
+        this.instances.push(instance);
       }.bind(this);
     },
   
@@ -153,15 +154,15 @@
         ];
       },
   
-      _set_image_size : function() {
-        this._set_raw_image_size();
-      }
+      _set_image_size : function() {}
     }
   };
 
   var Canvas = function(img, config) {
   
     this.config = _.extend(this.config, config);
+  
+    this.zoom_level = 0;
   
     this._set_img(img);
     this._set_el();
@@ -189,6 +190,7 @@
       this._set_image_ratio();
       this._set_letterbox_mixin();
       this._set_image_size();
+      this._set_cached_image_size();
       this._set_crop_window_coordinates();
       this._set_coordinate("origin");
     },
@@ -235,7 +237,10 @@
       }
   
       _.extend(this, letterbox.none);
-      this._set_image_size();
+    },
+  
+    _set_cached_image_size : function() {
+      this.cached_image_size = this.image_size;
     },
   
     _set_image_ratio : function() {
@@ -540,8 +545,8 @@
       this.image_size = image_size;
     },
   
-    _perform_zoom : function(zoom_amount) {
-      var width  = this.image_size.width + zoom_amount,
+    _perform_zoom : function() {
+      var width  = this.cached_image_size.width + (this.zoom_amount * this.zoom_level),
           height = this.get_height_from_width(width, this.image_ratio);
   
       this._modify_image_size({ width : width, height : height });
@@ -550,11 +555,14 @@
   
     actions : {
       zoomin : function() {
-        this._perform_zoom(this.zoom_amount);
+        ++this.zoom_level;
+        this._perform_zoom();
       },
   
       zoomout : function() {
-        this._perform_zoom(-this.zoom_amount);
+        if (this.zoom_level <= 0) { return false; }
+        --this.zoom_level;
+        this._perform_zoom();
       },
   
       done : function() {
@@ -571,9 +579,8 @@
   
       orientation : function() {
         this._swap_orientation();
-        var cached_image_size = this.image_size;
         this._set_common_properties();
-        this._modify_image_size(cached_image_size);
+        this._perform_zoom();
         this._snap_to_bounds() || this.draw();
       }
     }

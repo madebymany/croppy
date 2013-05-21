@@ -1,6 +1,8 @@
 // Constructor
 var Croppy = function(files, element, config) {
 
+  this.instances = [];
+
   if (!this._can_cut_the_mustard()) {
     throw "Browser does not cut the mustard - cannot continue";
   }
@@ -29,8 +31,6 @@ Croppy.prototype = {
     return false;
   },
 
-  instances : [],
-
   _readFile : function(file) {
 
     if (!window.FileReader) { throw "Browser does not support fileReader - cannot continue"; }
@@ -49,6 +49,7 @@ Croppy.prototype = {
     img.onload = function(){
       var instance = new Wrapper(img, this.config);
       this.$el.append(instance.$el);
+      this.instances.push(instance);
     }.bind(this);
   },
 

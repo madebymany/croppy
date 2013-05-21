@@ -61,8 +61,6 @@ var letterbox = {
       ];
     },
 
-    _set_image_size : function() {
-      this._set_raw_image_size();
-    }
+    _set_image_size : function() {}
   }
 };
