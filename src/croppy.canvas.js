@@ -85,13 +85,13 @@ Canvas.prototype = {
   },
 
   _set_image_ratio : function() {
-    this.image_ratio = this.calculate_aspect_ratio(this.img.width, this.img.height);
+    this.image_ratio = calculate_aspect_ratio(this.img.width, this.img.height);
   },
 
   _set_raw_image_size : function() {
     this.image_size = {
-      height : this.get_height_from_width(this.canvas_size.width, this.image_ratio),
-      width  : this.get_width_from_height(this.canvas_size.height, this.image_ratio)
+      height : get_height_from_width(this.canvas_size.width, this.image_ratio),
+      width  : get_width_from_height(this.canvas_size.height, this.image_ratio)
     };
   },
 
@@ -119,20 +119,8 @@ Canvas.prototype = {
 
     // reverse the aspect ratio if portrait
     this.aspect_ratio = (this.orientation === "landscape") ?
-      this.calculate_aspect_ratio(width, height) :
-      this.calculate_aspect_ratio(height, width);
-  },
-
-  calculate_aspect_ratio : function(width, height) {
-    return height / width;
-  },
-
-  get_height_from_width : function(width, aspect_ratio) {
-    return Math.round(width * aspect_ratio);
-  },
-
-  get_width_from_height : function(height, aspect_ratio) {
-    return Math.round(height / aspect_ratio);
+      calculate_aspect_ratio(width, height) :
+      calculate_aspect_ratio(height, width);
   },
 
   // is the user panning (moving the image)
@@ -154,7 +142,7 @@ Canvas.prototype = {
   _set_canvas_size : function() {
     this.canvas_size = {
       width : this.config.width,
-      height : this.get_height_from_width(this.config.width, this.aspect_ratio)
+      height : get_height_from_width(this.config.width, this.aspect_ratio)
     };
     this.el.width = this.canvas_size.width;
     this.el.height = this.canvas_size.height;
@@ -388,7 +376,7 @@ Canvas.prototype = {
 
   _perform_zoom : function() {
     var width  = this.cached_image_size.width + (this.zoom_amount * this.zoom_level),
-        height = this.get_height_from_width(width, this.image_ratio);
+        height = get_height_from_width(width, this.image_ratio);
 
     this._modify_image_size({ width : width, height : height });
     this._snap_to_bounds() || this.draw_with_rotation();
