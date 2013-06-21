@@ -1,6 +1,6 @@
 var Wrapper = function(img, config) {
   this.ui = new UI();
-  this.canvas = new Canvas(img, config);
+  this.interface = new Interface(img, config);
   this.createEl();
   this.render();
   this.addListeners();
@@ -14,12 +14,13 @@ Wrapper.fn = _.extend(Wrapper.prototype, Eventable, {
   },
 
   render : function() {
-    this.$el.append(this.ui.$el, this.canvas.$el);
+    console.log(this.interface.canvas.$el);
+    this.$el.append(this.ui.$el, this.interface.canvas.$el);
   },
 
   addListeners : function() {
     _.forEach(this.ui.items, function(action){
-      this.listenTo(this.ui, "ui:" +  action, _.bind(this.canvas.actions[action], this.canvas));
+      this.listenTo(this.ui, "ui:" +  action, _.bind(this.interface.actions[action], this.interface));
     }, this);
   }
 

@@ -10,6 +10,8 @@
 
   //= croppy.canvas.js
 
+  //= croppy.interface.js
+
   //= croppy.ui.js
 
   window.Croppy = Croppy;
