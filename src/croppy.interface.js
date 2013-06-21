@@ -351,6 +351,20 @@ Interface.prototype = {
     this._draw_letter_box();
   },
 
+  crop : function() {
+    var canvas = new Canvas();
+
+    var position = {
+      x : this.origin.x - this.crop_window[0],
+      y : this.origin.y - this.crop_window[1]
+    };
+
+    canvas.set_width(this.crop_window[2] - this.crop_window[0])
+    canvas.set_height(this.crop_window[3] - this.crop_window[1]);
+    canvas.draw(position, this.img, this.image_size);
+    // $(document.body).append(canvas.el);
+  },
+
   actions : {
     zoomin : function() {
       ++this.zoom_level;
@@ -373,7 +387,7 @@ Interface.prototype = {
     },
 
     new_image : function() {
-      console.log("new_image");
+      this.crop();
     },
 
     orientation : function() {

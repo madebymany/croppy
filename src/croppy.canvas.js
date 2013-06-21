@@ -11,7 +11,6 @@ Canvas.prototype = {
   },
 
   translate : function(coordinate) {
-    console.log(coordinate, "boom");
     this.ctx.translate(coordinate.x, coordinate.y);
   },
 
