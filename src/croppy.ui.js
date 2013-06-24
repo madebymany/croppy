@@ -6,13 +6,15 @@ var UI = function() {
 
 UI.fn = _.extend(UI.prototype, Eventable, {
 
+  is_enabled : true,
+
   delegateEvents: function() {
     _.forEach(this.items, function(item){
       this.$el.delegate(".croppy__" + item, "click", this.dispatch_event.bind(this));
     }, this);
   },
 
-  items : ["zoomin", "zoomout", "done", "redo", "new_image", "orientation"],
+  items : ["zoomin", "zoomout", "done", "rotate", "orientation"],
 
   createEl : function() {
     this.$el = $('<div>', {"class": "croppy__ui"});
@@ -28,7 +30,9 @@ UI.fn = _.extend(UI.prototype, Eventable, {
   },
 
   dispatch_event : function(e) {
-    this.trigger("ui:" + e.target.dataset.action);
+    if (this.is_enabled) {
+      this.trigger("ui:" + e.target.dataset.action);
+    }
   },
 
   remove : function() {

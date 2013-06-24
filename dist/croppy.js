@@ -1,9 +1,19 @@
 (function(document){
 
+  var calculate_aspect_ratio = function(width, height) {
+    return height / width;
+  };
+  
+  var get_height_from_width = function(width, aspect_ratio) {
+    return Math.round(width * aspect_ratio);
+  };
+  
+  var get_width_from_height = function(height, aspect_ratio) {
+    return Math.round(height / aspect_ratio);
+  };
+
   // Constructor
   var Croppy = function(files, element, config) {
-  
-    this.instances = [];
   
     if (!this._can_cut_the_mustard()) {
       throw "Browser does not cut the mustard - cannot continue";
@@ -15,16 +25,24 @@
     // override defaults
     this.config = _.extend({width : this.$el.width()}, config);
   
-    // Loop through the FileList and render image files as thumbnails.
-    [].forEach.call(files, function(file) {
-      if (file.type.match('image.*')) {
-        this._readFile(file);
-      }
-    }, this);
-  
+    this._readFile(files[0]);
   };
   
-  Croppy.prototype = {
+  _.extend(Croppy.prototype, Eventable, {
+  
+    _render : function(img, config) {
+      this.ui = new UI();
+      this.canvas = new InterfaceCanvas(img, config);
+      this.$el.append(this.ui.$el, this.canvas.canvas.$el);
+      this._addListeners();
+    },
+  
+    _addListeners : function() {
+      this.listenTo(this.canvas, "cropped", this.handle_cropped);
+      _.forEach(this.ui.items, function(action){
+        this.canvas.listenTo(this.ui, "ui:" +  action, this.canvas.actions[action]);
+      }, this);
+    },
   
     _can_cut_the_mustard : function() {
       if (window.FileReader) {
@@ -35,7 +53,7 @@
   
     _readFile : function(file) {
   
-      if (!window.FileReader) { throw "Browser does not support fileReader - cannot continue"; }
+      if (!file.type.match('image.*')) { return; }
   
       var reader = new FileReader();
   
@@ -49,9 +67,7 @@
       img.src = e.target.result;
   
       img.onload = function(){
-        var instance = new Wrapper(img, this.config);
-        this.$el.append(instance.$el);
-        this.instances.push(instance);
+        this._render(img, this.config);
       }.bind(this);
     },
   
@@ -60,33 +76,19 @@
         throw "Parent dom container is not defined";
       }
       this.$el = (element instanceof $) ? element : $(element);
-    }
-  
-  };
-
-  var Wrapper = function(img, config) {
-    this.ui = new UI();
-    this.canvas = new Canvas(img, config);
-    this.createEl();
-    this.render();
-    this.addListeners();
-    return this;
-  };
-  
-  Wrapper.fn = _.extend(Wrapper.prototype, Eventable, {
-  
-    createEl : function() {
-      this.$el = $('<div>', {"class": "croppy__instance"});
     },
   
-    render : function() {
-      this.$el.append(this.ui.$el, this.canvas.$el);
+    handle_cropped : function(data) {
+      this.trigger("cropped", data);
     },
   
-    addListeners : function() {
-      _.forEach(this.ui.items, function(action){
-        this.listenTo(this.ui, "ui:" +  action, _.bind(this.canvas.actions[action], this.canvas));
-      }, this);
+    detach : function() {
+      this.canvas.canvas.$el.detach();
+      this.ui.$el.detach();
+    },
+  
+    set_ui_enabled : function(boolean) {
+      this.ui.is_enabled = boolean;
     }
   
   });
@@ -95,26 +97,33 @@
     horizontal : {
   
       _reset_canvas_height_with_letterbox : function() {
-        this.el.height = this.canvas_size.height += this.max_mask_size;
+        this.canvas.set_height(this.canvas.get_height() + this.max_mask_size);
       },
   
       _set_image_size : function() {
         this.image_size = {
-          width : this.canvas_size.width,
+          width : this.canvas.get_width(),
           height : this.image_size.height
         };
       },
   
       _set_letterbox_coordinates : function() {
         this.letterbox_coordinates = [
-          [0, 0, this.canvas_size.width, this.half_mask_size],
-          [0, (this.canvas_size.height - this.half_mask_size), this.canvas_size.width, this.half_mask_size]
+          [
+            0, 0,
+            this.canvas.get_width(), this.half_mask_size
+          ],
+          [
+            0, (this.canvas.get_height() - this.half_mask_size),
+            this.canvas.get_width(), this.half_mask_size
+          ]
         ];
       },
   
       _set_crop_window_coordinates : function() {
         this.crop_window = [
-          0, this.half_mask_size, this.canvas_size.width, (this.canvas_size.height - this.half_mask_size)
+          0, this.half_mask_size,
+          this.canvas.get_width(), (this.canvas.get_height() - this.half_mask_size)
         ];
       }
     },
@@ -122,27 +131,37 @@
     vertical : {
   
       _reset_canvas_height_with_letterbox : function() {
-        this.el.height = this.canvas_size.height =
-          this.get_height_from_width(this.canvas_size.width - this.max_mask_size, this.aspect_ratio);
+        this.canvas.set_height(
+          get_height_from_width(
+            this.canvas.get_width() - this.max_mask_size, this.aspect_ratio
+          )
+        );
       },
   
       _set_image_size : function() {
         this.image_size = {
-          width : this.get_width_from_height(this.canvas_size.height, this.image_ratio),
-          height : this.canvas_size.height
+          width : get_width_from_height(this.canvas.get_height(), this.image_ratio),
+          height : this.canvas.get_height()
         };
       },
   
       _set_letterbox_coordinates : function() {
         this.letterbox_coordinates = [
-          [0, 0, this.half_mask_size, this.canvas_size.height],
-          [(this.canvas_size.width - this.half_mask_size), 0, this.half_mask_size, this.canvas_size.height]
+          [
+            0, 0,
+            this.half_mask_size, this.canvas.get_height()
+          ],
+          [
+            (this.canvas.get_width() - this.half_mask_size), 0,
+            this.half_mask_size, this.canvas.get_height()
+          ]
         ];
       },
   
       _set_crop_window_coordinates : function() {
         this.crop_window = [
-          this.half_mask_size, 0, (this.canvas_size.width - this.half_mask_size), this.canvas_size.height
+          this.half_mask_size, 0,
+          (this.canvas.get_width() - this.half_mask_size), this.canvas.get_height()
         ];
       }
     },
@@ -150,7 +169,7 @@
     none : {
       _set_crop_window_coordinates : function() {
         this.crop_window = [
-          0, 0, this.canvas_size.width, this.canvas_size.height
+          0, 0, this.canvas.get_width(), this.canvas.get_height()
         ];
       },
   
@@ -158,7 +177,102 @@
     }
   };
 
-  var Canvas = function(img, config) {
+  var Canvas = function() {
+    this._set_el();
+    this._set_ctx();
+  };
+  
+  Canvas.prototype = {
+  
+    _set_el : function() {
+      this.$el = $("<canvas>");
+      this.el  = this.$el[0];
+    },
+  
+    translate : function(coordinate) {
+      this.ctx.translate(coordinate.x, coordinate.y);
+    },
+  
+    _set_ctx : function() {
+      this.ctx = this.el.getContext('2d');
+    },
+  
+    set_width_and_height : function(width, aspect_ratio) {
+      this.set_width(width),
+      this.set_height(get_height_from_width(width, aspect_ratio));
+    },
+  
+    draw : function(position, img, image_size) {
+  
+      position = position || { x : 0, y : 0 };
+  
+      // clear the canvas (otherwise we get psychadelic trails)
+      this._fill_background();
+      // draw the image
+      this.ctx.drawImage(
+        img,
+        position.x,
+        position.y,
+        image_size.width,
+        image_size.height
+      );
+    },
+  
+    get_width : function() {
+      return this.width;
+    },
+  
+    get_height : function() {
+      return this.height;
+    },
+  
+    set_width : function(width) {
+      this.width = this.el.width = width;
+    },
+  
+    set_height : function(height) {
+      this.height = this.el.height = height;
+    },
+  
+    rotate_and_draw : function(position, img, image_size, rotation_angle) {
+      // save the current co-ordinate system
+      this.ctx.save();
+      // move to the middle of where we want to draw our image
+      this.ctx.translate((image_size.width/2),(image_size.height/2));
+      // rotate around that point, converting our
+      // angle from degrees to radians
+      this.ctx.rotate(rotation_angle * Math.PI/180);
+      // draw it up and to the left by half the width
+      // and height of the image
+  
+      position = {
+        x : position.x - (image_size.width/2),
+        y : position.y - (image_size.height/2)
+      };
+  
+      this.draw(position, img, image_size);
+      // and restore the co-ords to how they were when we began
+      this.ctx.restore();
+    },
+  
+    _fill_background : function() {
+      this.redraw(function(ctx) {
+        ctx.fillStyle = "rgba(255,255,255,1)";
+        ctx.fillRect(0, 0, this.get_width(), this.get_height());
+      }, this);
+    },
+  
+    redraw : function(callback, scope) {
+      var ctx = this.ctx;
+      ctx.save();
+      ctx.setTransform(1,0,0,1,0,0);
+      callback.call(scope, ctx);
+      ctx.restore();
+    }
+  
+  };
+
+  var InterfaceCanvas = function(img, config) {
   
     this.config = _.extend(this.config, config);
   
@@ -166,17 +280,18 @@
     this.rotation_angle = 0;
   
     this._set_img(img);
-    this._set_el();
     this._set_orientation_from_config();
+  
+    this._set_canvas();
   
     this._set_common_properties();
   
-    this._set_ctx();
-    this._set_mouse_events("on");
-    this.draw_with_rotation(this.origin);
+    this._set_mouse_events("addEvent");
+    this.draw_to_canvas(this.origin);
+  
   };
   
-  Canvas.prototype = {
+  _.extend(InterfaceCanvas.prototype, Eventable, {
   
     zoom_amount : 10,
   
@@ -185,9 +300,13 @@
       max_mask_size : 160
     },
   
+    _set_canvas : function() {
+      this.canvas = new Canvas();
+    },
+  
     _set_common_properties : function() {
-      this._set_aspect_ratio_from_config();
-      this._set_canvas_size();
+      this._get_aspect_ratio_from_config();
+      this.canvas.set_width_and_height(this.config.width, this.aspect_ratio);
       this._set_image_ratio();
       this._set_letterbox_mixin();
       this._set_image_size();
@@ -225,15 +344,15 @@
   
       this._set_raw_image_size();
   
-      if (this.image_size.width < this.canvas_size.width) {
+      if (this.image_size.width < this.canvas.get_width()) {
         _.extend(this, letterbox.horizontal);
-        this._init_letterbox(this.image_size.height, this.canvas_size.height);
+        this._init_letterbox(this.image_size.height, this.canvas.get_height());
         return;
       }
   
-      if (this.image_size.height < this.canvas_size.height) {
+      if (this.image_size.height < this.canvas.get_height()) {
         _.extend(this, letterbox.vertical);
-        this._init_letterbox(this.image_size.width, this.canvas_size.width);
+        this._init_letterbox(this.image_size.width, this.canvas.get_width());
         return;
       }
   
@@ -245,19 +364,23 @@
     },
   
     _set_image_ratio : function() {
-      this.image_ratio = this.calculate_aspect_ratio(this.img.width, this.img.height);
+      this.image_ratio = calculate_aspect_ratio(this.img.width, this.img.height);
     },
   
     _set_raw_image_size : function() {
       this.image_size = {
-        height : this.get_height_from_width(this.canvas_size.width, this.image_ratio),
-        width  : this.get_width_from_height(this.canvas_size.height, this.image_ratio)
+        height : get_height_from_width(this.canvas.get_width(), this.image_ratio),
+        width  : get_width_from_height(this.canvas.get_height(), this.image_ratio)
       };
     },
   
     _set_mask_size : function(image_size, canvas_size) {
       var mask_size = (image_size - canvas_size);
-      this.max_mask_size = (mask_size > this.config.max_mask_size) ? this.config.max_mask_size : mask_size;
+  
+      this.max_mask_size = (mask_size > this.config.max_mask_size) ?
+        this.config.max_mask_size :
+        mask_size;
+  
       this._set_half_mask_size();
     },
   
@@ -265,7 +388,7 @@
       this.half_mask_size = Math.round(this.max_mask_size / 2);
     },
   
-    _set_aspect_ratio_from_config : function() {
+    _get_aspect_ratio_from_config : function() {
   
       var aspect_ratio = this.config.aspect_ratio;
   
@@ -273,26 +396,16 @@
       if (typeof aspect_ratio !== "string") { return false; }
   
       // convert the string into width and height
-      var ratio_array  = aspect_ratio.split(":"),
-          width        = parseInt(ratio_array[0], 10),
-          height       = parseInt(ratio_array[1], 10);
+      aspect_ratio = aspect_ratio.split(":");
   
+      this._set_aspect_ratio(parseInt(aspect_ratio[0], 10), parseInt(aspect_ratio[1], 10));
+    },
+  
+    _set_aspect_ratio : function(width, height) {
       // reverse the aspect ratio if portrait
       this.aspect_ratio = (this.orientation === "landscape") ?
-        this.calculate_aspect_ratio(width, height) :
-        this.calculate_aspect_ratio(height, width);
-    },
-  
-    calculate_aspect_ratio : function(width, height) {
-      return height / width;
-    },
-  
-    get_height_from_width : function(width, aspect_ratio) {
-      return Math.round(width * aspect_ratio);
-    },
-  
-    get_width_from_height : function(height, aspect_ratio) {
-      return Math.round(height / aspect_ratio);
+        calculate_aspect_ratio(width, height) :
+        calculate_aspect_ratio(height, width);
     },
   
     // is the user panning (moving the image)
@@ -300,24 +413,6 @@
   
     _set_img : function(img) {
       this.img = img;
-    },
-  
-    _set_ctx : function() {
-      this.ctx = this.el.getContext('2d');
-    },
-  
-    _set_el : function() {
-      this.$el = $("<canvas>");
-      this.el  = this.$el[0];
-    },
-  
-    _set_canvas_size : function() {
-      this.canvas_size = {
-        width : this.config.width,
-        height : this.get_height_from_width(this.config.width, this.aspect_ratio)
-      };
-      this.el.width = this.canvas_size.width;
-      this.el.height = this.canvas_size.height;
     },
   
     // baseline for origin of the image relative to top left of canvas
@@ -332,15 +427,13 @@
     },
   
     // convenience function for adding event listeners to the canvas
-    on : function(event, el, callback) {
-      (el || this.el)
-        .addEventListener(event, (callback || this), false);
+    addEvent : function(event) {
+      this.canvas.el.addEventListener(event, this, false);
     },
   
     // convenience function for removing event listeners from the canvas
-    off : function(event, el, callback) {
-      (el || this.el)
-        .removeEventListener(event, (callback || this), false);
+    removeEvent : function(event) {
+      this.canvas.el.removeEventListener(event, this, false);
     },
   
     // Refernced by this when using addEventListener
@@ -362,29 +455,9 @@
         "mousemove",
         "mouseup",
         "mouseleave"
-      ].forEach(function(event){
-        this[method](event);
-      }, this);
+      ].forEach(this[method], this);
   
       this[method]("mouseup", window);
-    },
-  
-    draw : function(position) {
-  
-      position = position || { x : 0, y : 0 };
-  
-      // clear the canvas (otherwise we get psychadelic trails)
-      this._fill_background();
-      // draw the image
-      this.ctx.drawImage(
-        this.img,
-        position.x,
-        position.y,
-        this.image_size.width,
-        this.image_size.height
-      );
-  
-      this._draw_letter_box();
     },
   
     // this is the letterbox that appears at the top and bottom
@@ -400,31 +473,14 @@
   
       // otherwise redefine the function
       this._draw_letter_box = function() {
-        var mask = this.letterbox_coordinates;
-        this._redraw_canvas(function(ctx) {
+        this.canvas.redraw(function(ctx) {
           ctx.fillStyle = "rgba(0,0,0,0.6)";
-          ctx.fillRect.apply(ctx, mask[0]);
-          ctx.fillRect.apply(ctx, mask[1]);
-        });
+          ctx.fillRect.apply(ctx, this.letterbox_coordinates[0]);
+          ctx.fillRect.apply(ctx, this.letterbox_coordinates[1]);
+        }, this);
       };
   
       this._draw_letter_box();
-    },
-  
-    _fill_background : function() {
-      var canvas_size = this.canvas_size;
-      this._redraw_canvas(function(ctx) {
-        ctx.fillStyle = "rgba(255,255,255,1)";
-        ctx.fillRect(0, 0, canvas_size.width, canvas_size.height);
-      });
-    },
-  
-    _redraw_canvas : function(callback) {
-      var ctx = this.ctx;
-      ctx.save();
-      ctx.setTransform(1,0,0,1,0,0);
-      callback(ctx);
-      ctx.restore();
     },
   
     get_mouse_position : function(e) {
@@ -466,7 +522,7 @@
   
       // move the image by the difference between the cached start
       // and current mouse position
-      this.draw_with_rotation(this._distance_moved);
+      this.draw_to_canvas(this._distance_moved);
   
     },
   
@@ -504,7 +560,7 @@
       // reset the origin (top left) to the new location (top left) of the image
       this._increment_origin(coordinate);
       // set the translate origin to the new position
-      this.ctx.translate(coordinate.x, coordinate.y);
+      this.canvas.translate(coordinate);
     },
   
     _snap_to_bounds : function() {
@@ -512,15 +568,25 @@
       // calculate the horzontal (x) and vertical (y) correction needed
       // to snap the image back into place
       var correction = {
-        x : this.coordiate_correction(this.image_size.width, this.crop_window[0], this.crop_window[2], this.origin.x),
-        y : this.coordiate_correction(this.image_size.height, this.crop_window[1], this.crop_window[3], this.origin.y)
+        x : this.coordiate_correction(
+          this.image_size.width,
+          this.crop_window[0],
+          this.crop_window[2],
+          this.origin.x
+        ),
+        y : this.coordiate_correction(
+          this.image_size.height,
+          this.crop_window[1],
+          this.crop_window[3],
+          this.origin.y
+        )
       };
   
       // unless there is no need to perform a correction
       if (correction.x === 0 && correction.y === 0) { return false; }
   
       // redraw the image in the correct position
-      this.draw_with_rotation(correction);
+      this.draw_to_canvas(correction);
       // set the translate origin to the new position
       this._update_translate_origin(correction);
   
@@ -548,10 +614,10 @@
   
     _perform_zoom : function() {
       var width  = this.cached_image_size.width + (this.zoom_amount * this.zoom_level),
-          height = this.get_height_from_width(width, this.image_ratio);
+          height = get_height_from_width(width, this.image_ratio);
   
       this._modify_image_size({ width : width, height : height });
-      this._snap_to_bounds() || this.draw_with_rotation();
+      this._snap_to_bounds() || this.draw_to_canvas();
     },
   
     _increment_rotation_angle : function() {
@@ -559,30 +625,26 @@
       this.rotation_angle = (this.rotation_angle >= 360) ? 0 : this.rotation_angle;
     },
   
-    draw_with_rotation : function(position) {
-  
+    draw_to_canvas : function(position) {
       position = position || { x : 0, y : 0 };
+      this.canvas[this.rotation_angle ? "rotate_and_draw" : "draw"]
+        (position, this.img, this.image_size, this.rotation_angle);
+      this._draw_letter_box();
+    },
   
-      if (this.rotation_angle === 0) {
-        this.draw(position);
-        return;
-      }
+    crop : function() {
+      var canvas = new Canvas();
   
-      // save the current co-ordinate system
-      this.ctx.save();
-      // move to the middle of where we want to draw our image
-      this.ctx.translate((this.image_size.width/2),(this.image_size.height/2));
-      // rotate around that point, converting our
-      // angle from degrees to radians
-      this.ctx.rotate(this.rotation_angle * Math.PI/180);
-      // draw it up and to the left by half the width
-      // and height of the image
-      this.draw({
-        x : position.x - (this.image_size.width/2),
-        y : position.y - (this.image_size.height/2)
-      });
-      // and restore the co-ords to how they were when we began
-      this.ctx.restore();
+      var position = {
+        x : this.origin.x - this.crop_window[0],
+        y : this.origin.y - this.crop_window[1]
+      };
+  
+      canvas.set_width(this.crop_window[2] - this.crop_window[0]);
+      canvas.set_height(this.crop_window[3] - this.crop_window[1]);
+      canvas.draw(position, this.img, this.image_size);
+  
+      return canvas.el.toDataURL("image/jpeg");
     },
   
     actions : {
@@ -598,27 +660,23 @@
       },
   
       done : function() {
-        console.log("done");
+        this.trigger("cropped", this.crop());
       },
   
-      redo : function() {
+      rotate : function() {
         this._increment_rotation_angle();
-        this.draw_with_rotation();
-      },
-  
-      new_image : function() {
-        console.log("new_image");
+        this.draw_to_canvas();
       },
   
       orientation : function() {
         this._swap_orientation();
         this._set_common_properties();
         this._perform_zoom();
-        this._snap_to_bounds() || this.draw_with_rotation();
+        this._snap_to_bounds() || this.draw_to_canvas();
       }
     }
   
-  };
+  });
 
   var UI = function() {
     this.createEl();
@@ -628,13 +686,15 @@
   
   UI.fn = _.extend(UI.prototype, Eventable, {
   
+    is_enabled : true,
+  
     delegateEvents: function() {
       _.forEach(this.items, function(item){
         this.$el.delegate(".croppy__" + item, "click", this.dispatch_event.bind(this));
       }, this);
     },
   
-    items : ["zoomin", "zoomout", "done", "redo", "new_image", "orientation"],
+    items : ["zoomin", "zoomout", "done", "rotate", "orientation"],
   
     createEl : function() {
       this.$el = $('<div>', {"class": "croppy__ui"});
@@ -650,7 +710,9 @@
     },
   
     dispatch_event : function(e) {
-      this.trigger("ui:" + e.target.dataset.action);
+      if (this.is_enabled) {
+        this.trigger("ui:" + e.target.dataset.action);
+      }
     },
   
     remove : function() {

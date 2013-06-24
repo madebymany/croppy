@@ -1,12 +1,14 @@
 (function(document){
 
-  //= croppy.constructor.js
+  //= croppy.functional.js
 
-  //= croppy.wrapper.js
+  //= croppy.constructor.js
 
   //= croppy.letterbox_mixins.js
 
   //= croppy.canvas.js
+
+  //= croppy.interface.js
 
   //= croppy.ui.js
 

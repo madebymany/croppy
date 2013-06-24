@@ -1,8 +1,6 @@
 // Constructor
 var Croppy = function(files, element, config) {
 
-  this.instances = [];
-
   if (!this._can_cut_the_mustard()) {
     throw "Browser does not cut the mustard - cannot continue";
   }
@@ -13,16 +11,24 @@ var Croppy = function(files, element, config) {
   // override defaults
   this.config = _.extend({width : this.$el.width()}, config);
 
-  // Loop through the FileList and render image files as thumbnails.
-  [].forEach.call(files, function(file) {
-    if (file.type.match('image.*')) {
-      this._readFile(file);
-    }
-  }, this);
-
+  this._readFile(files[0]);
 };
 
-Croppy.prototype = {
+_.extend(Croppy.prototype, Eventable, {
+
+  _render : function(img, config) {
+    this.ui = new UI();
+    this.canvas = new InterfaceCanvas(img, config);
+    this.$el.append(this.ui.$el, this.canvas.canvas.$el);
+    this._addListeners();
+  },
+
+  _addListeners : function() {
+    this.listenTo(this.canvas, "cropped", this.handle_cropped);
+    _.forEach(this.ui.items, function(action){
+      this.canvas.listenTo(this.ui, "ui:" +  action, this.canvas.actions[action]);
+    }, this);
+  },
 
   _can_cut_the_mustard : function() {
     if (window.FileReader) {
@@ -33,7 +39,7 @@ Croppy.prototype = {
 
   _readFile : function(file) {
 
-    if (!window.FileReader) { throw "Browser does not support fileReader - cannot continue"; }
+    if (!file.type.match('image.*')) { return; }
 
     var reader = new FileReader();
 
@@ -47,9 +53,7 @@ Croppy.prototype = {
     img.src = e.target.result;
 
     img.onload = function(){
-      var instance = new Wrapper(img, this.config);
-      this.$el.append(instance.$el);
-      this.instances.push(instance);
+      this._render(img, this.config);
     }.bind(this);
   },
 
@@ -58,6 +62,19 @@ Croppy.prototype = {
       throw "Parent dom container is not defined";
     }
     this.$el = (element instanceof $) ? element : $(element);
+  },
+
+  handle_cropped : function(data) {
+    this.trigger("cropped", data);
+  },
+
+  detach : function() {
+    this.canvas.canvas.$el.detach();
+    this.ui.$el.detach();
+  },
+
+  set_ui_enabled : function(boolean) {
+    this.ui.is_enabled = boolean;
   }
 
-};
+});
