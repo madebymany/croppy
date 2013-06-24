@@ -37,7 +37,7 @@ module.exports = function(grunt) {
       },
       standard: {
         files: {
-          'dist/croppy.min.js': ['<banner:meta.banner>', 'dist/croppy.js']
+          'dist/croppy.min.js': ['dist/croppy.js']
         }
       }
     },

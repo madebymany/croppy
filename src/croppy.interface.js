@@ -1,4 +1,4 @@
-var Interface = function(img, config) {
+var InterfaceCanvas = function(img, config) {
 
   this.config = _.extend(this.config, config);
 
@@ -12,11 +12,12 @@ var Interface = function(img, config) {
 
   this._set_common_properties();
 
-  this._set_mouse_events("on");
+  this._set_mouse_events("addEvent");
   this.draw_to_canvas(this.origin);
+
 };
 
-Interface.prototype = {
+_.extend(InterfaceCanvas.prototype, Eventable, {
 
   zoom_amount : 10,
 
@@ -152,15 +153,13 @@ Interface.prototype = {
   },
 
   // convenience function for adding event listeners to the canvas
-  on : function(event, el, callback) {
-    (el || this.canvas.el)
-      .addEventListener(event, (callback || this), false);
+  addEvent : function(event) {
+    this.canvas.el.addEventListener(event, this, false);
   },
 
   // convenience function for removing event listeners from the canvas
-  off : function(event, el, callback) {
-    (el || this.canvas.el)
-      .removeEventListener(event, (callback || this), false);
+  removeEvent : function(event) {
+    this.canvas.el.removeEventListener(event, this, false);
   },
 
   // Refernced by this when using addEventListener
@@ -182,9 +181,7 @@ Interface.prototype = {
       "mousemove",
       "mouseup",
       "mouseleave"
-    ].forEach(function(event){
-      this[method](event);
-    }, this);
+    ].forEach(this[method], this);
 
     this[method]("mouseup", window);
   },
@@ -297,8 +294,18 @@ Interface.prototype = {
     // calculate the horzontal (x) and vertical (y) correction needed
     // to snap the image back into place
     var correction = {
-      x : this.coordiate_correction(this.image_size.width, this.crop_window[0], this.crop_window[2], this.origin.x),
-      y : this.coordiate_correction(this.image_size.height, this.crop_window[1], this.crop_window[3], this.origin.y)
+      x : this.coordiate_correction(
+        this.image_size.width,
+        this.crop_window[0],
+        this.crop_window[2],
+        this.origin.x
+      ),
+      y : this.coordiate_correction(
+        this.image_size.height,
+        this.crop_window[1],
+        this.crop_window[3],
+        this.origin.y
+      )
     };
 
     // unless there is no need to perform a correction
@@ -359,10 +366,11 @@ Interface.prototype = {
       y : this.origin.y - this.crop_window[1]
     };
 
-    canvas.set_width(this.crop_window[2] - this.crop_window[0])
+    canvas.set_width(this.crop_window[2] - this.crop_window[0]);
     canvas.set_height(this.crop_window[3] - this.crop_window[1]);
     canvas.draw(position, this.img, this.image_size);
-    // $(document.body).append(canvas.el);
+
+    return canvas.el.toDataURL("image/jpeg");
   },
 
   actions : {
@@ -378,16 +386,12 @@ Interface.prototype = {
     },
 
     done : function() {
-      console.log("done");
+      this.trigger("cropped", this.crop());
     },
 
-    redo : function() {
+    rotate : function() {
       this._increment_rotation_angle();
       this.draw_to_canvas();
-    },
-
-    new_image : function() {
-      this.crop();
     },
 
     orientation : function() {
@@ -398,4 +402,4 @@ Interface.prototype = {
     }
   }
 
-};
+});

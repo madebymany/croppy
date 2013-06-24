@@ -4,8 +4,6 @@
 
   //= croppy.constructor.js
 
-  //= croppy.wrapper.js
-
   //= croppy.letterbox_mixins.js
 
   //= croppy.canvas.js

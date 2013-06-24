@@ -15,8 +15,6 @@
   // Constructor
   var Croppy = function(files, element, config) {
   
-    this.instances = [];
-  
     if (!this._can_cut_the_mustard()) {
       throw "Browser does not cut the mustard - cannot continue";
     }
@@ -27,16 +25,24 @@
     // override defaults
     this.config = _.extend({width : this.$el.width()}, config);
   
-    // Loop through the FileList and render image files as thumbnails.
-    [].forEach.call(files, function(file) {
-      if (file.type.match('image.*')) {
-        this._readFile(file);
-      }
-    }, this);
-  
+    this._readFile(files[0]);
   };
   
-  Croppy.prototype = {
+  _.extend(Croppy.prototype, Eventable, {
+  
+    _render : function(img, config) {
+      this.ui = new UI();
+      this.canvas = new InterfaceCanvas(img, config);
+      this.$el.append(this.ui.$el, this.canvas.canvas.$el);
+      this._addListeners();
+    },
+  
+    _addListeners : function() {
+      this.listenTo(this.canvas, "cropped", this.handle_cropped);
+      _.forEach(this.ui.items, function(action){
+        this.canvas.listenTo(this.ui, "ui:" +  action, this.canvas.actions[action]);
+      }, this);
+    },
   
     _can_cut_the_mustard : function() {
       if (window.FileReader) {
@@ -47,7 +53,7 @@
   
     _readFile : function(file) {
   
-      if (!window.FileReader) { throw "Browser does not support fileReader - cannot continue"; }
+      if (!file.type.match('image.*')) { return; }
   
       var reader = new FileReader();
   
@@ -61,9 +67,7 @@
       img.src = e.target.result;
   
       img.onload = function(){
-        var instance = new Wrapper(img, this.config);
-        this.$el.append(instance.$el);
-        this.instances.push(instance);
+        this._render(img, this.config);
       }.bind(this);
     },
   
@@ -72,34 +76,19 @@
         throw "Parent dom container is not defined";
       }
       this.$el = (element instanceof $) ? element : $(element);
-    }
-  
-  };
-
-  var Wrapper = function(img, config) {
-    this.ui = new UI();
-    this.interface = new Interface(img, config);
-    this.createEl();
-    this.render();
-    this.addListeners();
-    return this;
-  };
-  
-  Wrapper.fn = _.extend(Wrapper.prototype, Eventable, {
-  
-    createEl : function() {
-      this.$el = $('<div>', {"class": "croppy__instance"});
     },
   
-    render : function() {
-      console.log(this.interface.canvas.$el);
-      this.$el.append(this.ui.$el, this.interface.canvas.$el);
+    handle_cropped : function(data) {
+      this.trigger("cropped", data);
     },
   
-    addListeners : function() {
-      _.forEach(this.ui.items, function(action){
-        this.listenTo(this.ui, "ui:" +  action, _.bind(this.interface.actions[action], this.interface));
-      }, this);
+    detach : function() {
+      this.canvas.canvas.$el.detach();
+      this.ui.$el.detach();
+    },
+  
+    set_ui_enabled : function(boolean) {
+      this.ui.is_enabled = boolean;
     }
   
   });
@@ -283,7 +272,7 @@
   
   };
 
-  var Interface = function(img, config) {
+  var InterfaceCanvas = function(img, config) {
   
     this.config = _.extend(this.config, config);
   
@@ -297,11 +286,12 @@
   
     this._set_common_properties();
   
-    this._set_mouse_events("on");
+    this._set_mouse_events("addEvent");
     this.draw_to_canvas(this.origin);
+  
   };
   
-  Interface.prototype = {
+  _.extend(InterfaceCanvas.prototype, Eventable, {
   
     zoom_amount : 10,
   
@@ -437,15 +427,13 @@
     },
   
     // convenience function for adding event listeners to the canvas
-    on : function(event, el, callback) {
-      (el || this.canvas.el)
-        .addEventListener(event, (callback || this), false);
+    addEvent : function(event) {
+      this.canvas.el.addEventListener(event, this, false);
     },
   
     // convenience function for removing event listeners from the canvas
-    off : function(event, el, callback) {
-      (el || this.canvas.el)
-        .removeEventListener(event, (callback || this), false);
+    removeEvent : function(event) {
+      this.canvas.el.removeEventListener(event, this, false);
     },
   
     // Refernced by this when using addEventListener
@@ -467,9 +455,7 @@
         "mousemove",
         "mouseup",
         "mouseleave"
-      ].forEach(function(event){
-        this[method](event);
-      }, this);
+      ].forEach(this[method], this);
   
       this[method]("mouseup", window);
     },
@@ -582,8 +568,18 @@
       // calculate the horzontal (x) and vertical (y) correction needed
       // to snap the image back into place
       var correction = {
-        x : this.coordiate_correction(this.image_size.width, this.crop_window[0], this.crop_window[2], this.origin.x),
-        y : this.coordiate_correction(this.image_size.height, this.crop_window[1], this.crop_window[3], this.origin.y)
+        x : this.coordiate_correction(
+          this.image_size.width,
+          this.crop_window[0],
+          this.crop_window[2],
+          this.origin.x
+        ),
+        y : this.coordiate_correction(
+          this.image_size.height,
+          this.crop_window[1],
+          this.crop_window[3],
+          this.origin.y
+        )
       };
   
       // unless there is no need to perform a correction
@@ -644,10 +640,11 @@
         y : this.origin.y - this.crop_window[1]
       };
   
-      canvas.set_width(this.crop_window[2] - this.crop_window[0])
+      canvas.set_width(this.crop_window[2] - this.crop_window[0]);
       canvas.set_height(this.crop_window[3] - this.crop_window[1]);
       canvas.draw(position, this.img, this.image_size);
-      // $(document.body).append(canvas.el);
+  
+      return canvas.el.toDataURL("image/jpeg");
     },
   
     actions : {
@@ -663,16 +660,12 @@
       },
   
       done : function() {
-        console.log("done");
+        this.trigger("cropped", this.crop());
       },
   
-      redo : function() {
+      rotate : function() {
         this._increment_rotation_angle();
         this.draw_to_canvas();
-      },
-  
-      new_image : function() {
-        this.crop();
       },
   
       orientation : function() {
@@ -683,7 +676,7 @@
       }
     }
   
-  };
+  });
 
   var UI = function() {
     this.createEl();
@@ -693,13 +686,15 @@
   
   UI.fn = _.extend(UI.prototype, Eventable, {
   
+    is_enabled : true,
+  
     delegateEvents: function() {
       _.forEach(this.items, function(item){
         this.$el.delegate(".croppy__" + item, "click", this.dispatch_event.bind(this));
       }, this);
     },
   
-    items : ["zoomin", "zoomout", "done", "redo", "new_image", "orientation"],
+    items : ["zoomin", "zoomout", "done", "rotate", "orientation"],
   
     createEl : function() {
       this.$el = $('<div>', {"class": "croppy__ui"});
@@ -715,7 +710,9 @@
     },
   
     dispatch_event : function(e) {
-      this.trigger("ui:" + e.target.dataset.action);
+      if (this.is_enabled) {
+        this.trigger("ui:" + e.target.dataset.action);
+      }
     },
   
     remove : function() {
