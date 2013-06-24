@@ -1,5 +1,0 @@
-{
-  "directory": "components",
-  "json": "component.json",
-  "shorthand_resolver": "git://example.com/{{{ organization }}}/{{{ package }}}.git"
-}
