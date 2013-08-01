@@ -317,8 +317,12 @@
   
     _set_orientation_from_config : function() {
   
-      if (_.isString(this.config.orientation)) {
-        this.orientation = orientation;
+      var has_orientation = _.any(["landscape", "portrait"], function(o) {
+        return o === this.config.orientation;
+      }, this);
+  
+      if (has_orientation) {
+        this.orientation = this.config.orientation;
         return;
       }
   
