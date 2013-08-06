@@ -12,7 +12,6 @@
     return Math.round(height / aspect_ratio);
   };
 
-  // Constructor
   var Croppy = function(files, element, config) {
   
     if (!this._can_cut_the_mustard()) {
@@ -79,6 +78,7 @@
     },
   
     handle_cropped : function(data) {
+      this.config.on_crop && this.config.on_crop.call(null, data);
       this.trigger("cropped", data);
     },
   
@@ -317,9 +317,7 @@
   
     _set_orientation_from_config : function() {
   
-      var has_orientation = _.any(["landscape", "portrait"], function(o) {
-        return o === this.config.orientation;
-      }, this);
+      var has_orientation = _.contains(["landscape", "portrait"], this.config.orientation);
   
       if (has_orientation) {
         this.orientation = this.config.orientation;

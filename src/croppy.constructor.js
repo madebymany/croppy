@@ -1,4 +1,3 @@
-// Constructor
 var Croppy = function(files, element, config) {
 
   if (!this._can_cut_the_mustard()) {
@@ -65,6 +64,7 @@ _.extend(Croppy.prototype, Eventable, {
   },
 
   handle_cropped : function(data) {
+    this.config.on_crop && this.config.on_crop.call(null, data);
     this.trigger("cropped", data);
   },
 

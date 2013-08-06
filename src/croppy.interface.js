@@ -43,9 +43,7 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
 
   _set_orientation_from_config : function() {
 
-    var has_orientation = _.any(["landscape", "portrait"], function(o) {
-      return o === this.config.orientation;
-    }, this);
+    var has_orientation = _.contains(["landscape", "portrait"], this.config.orientation);
 
     if (has_orientation) {
       this.orientation = this.config.orientation;
