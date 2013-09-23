@@ -39,7 +39,6 @@ UI.fn = _.extend(UI.prototype, Eventable, {
     this.$el.undelegate().remove();
   },
 
-
   template : _.template('<a class="croppy-icon croppy__<%=action%>" data-action="<%=action%>"><%=action%></a>')
 
 });

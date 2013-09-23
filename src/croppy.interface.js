@@ -2,6 +2,8 @@ var InterfaceCanvas = function(img, config) {
 
   this.config = _.extend(this.config, config);
 
+  window.croppy = this;
+
   this.zoom_level = 0;
   this.rotation_angle = 0;
 
@@ -28,6 +30,7 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
 
   _set_canvas : function() {
     this.canvas = new Canvas();
+    this.crop_canvas = new Canvas();
   },
 
   _set_common_properties : function() {
@@ -35,9 +38,9 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
     this.canvas.set_width_and_height(this.config.width, this.aspect_ratio);
     this._set_image_ratio();
     this._set_letterbox_mixin();
-    this._set_image_size();
+    this.letterbox._set_image_size.call(this);
     this._set_cached_image_size();
-    this._set_crop_window_coordinates();
+    this.letterbox._set_crop_window_coordinates.call(this);
     this._set_coordinate("origin");
   },
 
@@ -64,8 +67,8 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
 
   _init_letterbox : function() {
     this._set_mask_size.apply(this, arguments);
-    this._reset_canvas_height_with_letterbox();
-    this._set_letterbox_coordinates();
+    this.letterbox._reset_canvas_height_with_letterbox.call(this);
+    this.letterbox._set_letterbox_coordinates.call(this);
   },
 
   _set_letterbox_mixin : function() {
@@ -73,18 +76,21 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
     this._set_raw_image_size();
 
     if (this.image_size.width < this.canvas.get_width()) {
-      _.extend(this, letterbox.horizontal);
+      // _.extend(this, letterbox.horizontal);
+      this.letterbox = letterbox.horizontal;
       this._init_letterbox(this.image_size.height, this.canvas.get_height());
       return;
     }
 
     if (this.image_size.height < this.canvas.get_height()) {
-      _.extend(this, letterbox.vertical);
+      // _.extend(this, letterbox.vertical);
+      this.letterbox = letterbox.vertical;
       this._init_letterbox(this.image_size.width, this.canvas.get_width());
       return;
     }
 
-    _.extend(this, letterbox.none);
+    // _.extend(this, letterbox.none);
+    this.letterbox = letterbox.none;
   },
 
   _set_cached_image_size : function() {
@@ -360,17 +366,30 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
     this._draw_letter_box();
   },
 
-  crop : function() {
-    var canvas = new Canvas();
+  scale : function(num) {
+    var scale = this.img.width / this.image_size.width;
+    var scale_property = this.scale = function(num) {
+      return Math.round(num * scale);
+    };
+    return scale_property(num);
+  },
 
+  crop : function() {
+
+    var canvas = new Canvas();
+    var crop_window = _.map(this.crop_window, this.scale, this);
     var position = {
-      x : this.origin.x - this.crop_window[0],
-      y : this.origin.y - this.crop_window[1]
+      x : this.scale(this.origin.x) - crop_window[0],
+      y : this.scale(this.origin.y) - crop_window[1]
     };
 
-    canvas.set_width(this.crop_window[2] - this.crop_window[0]);
-    canvas.set_height(this.crop_window[3] - this.crop_window[1]);
-    canvas.draw(position, this.img, this.image_size);
+    canvas.set_width(crop_window[2] - crop_window[0]);
+    canvas.set_height(crop_window[3] - crop_window[1]);
+
+    canvas.draw(position, this.img, {
+      width : this.scale(this.image_size.width),
+      height : this.scale(this.image_size.height)
+    });
 
     return canvas.el.toDataURL("image/jpeg");
   },
@@ -388,6 +407,9 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
     },
 
     done : function() {
+      var image = document.createElement("img");
+      image.src = this.crop();
+      document.body.appendChild(image);
       this.trigger("cropped", this.crop());
     },
 
