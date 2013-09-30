@@ -366,30 +366,29 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
     this._draw_letter_box();
   },
 
-  scale : function(num) {
-    var scale = this.img.width / this.image_size.width;
-    var scale_property = this.scale = function(num) {
-      return Math.round(num * scale);
-    };
-    return scale_property(num);
-  },
+  // scale : function(num) {
+  //   var scale = this.img.width / this.image_size.width;
+  //   var scale_property = this.scale = function(num) {
+  //     return Math.round(num * scale);
+  //   };
+  //   return scale_property(num);
+  // },
 
   crop : function() {
-
+    var scale_factor = this.img.width / this.image_size.width;
+    var scale_with_factor = _.partial(scale, scale_factor);
     var canvas = new Canvas();
-    var crop_window = _.map(this.crop_window, this.scale, this);
+    var crop_window = _.map(this.crop_window, scale_with_factor, this);
+
     var position = {
-      x : this.scale(this.origin.x) - crop_window[0],
-      y : this.scale(this.origin.y) - crop_window[1]
+      x : scale_with_factor(this.origin.x) - crop_window[0],
+      y : scale_with_factor(this.origin.y) - crop_window[1]
     };
 
     canvas.set_width(crop_window[2] - crop_window[0]);
     canvas.set_height(crop_window[3] - crop_window[1]);
 
-    canvas.draw(position, this.img, {
-      width : this.scale(this.image_size.width),
-      height : this.scale(this.image_size.height)
-    });
+    canvas.draw(position, this.img, this.img);
 
     return canvas.el.toDataURL("image/jpeg");
   },
