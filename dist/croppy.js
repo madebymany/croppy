@@ -644,17 +644,8 @@
       this._draw_letter_box();
     },
   
-    // scale : function(num) {
-    //   var scale = this.img.width / this.image_size.width;
-    //   var scale_property = this.scale = function(num) {
-    //     return Math.round(num * scale);
-    //   };
-    //   return scale_property(num);
-    // },
-  
     crop : function() {
-      var scale_factor = this.img.width / this.image_size.width;
-      var scale_with_factor = _.partial(scale, scale_factor);
+      var scale_with_factor = _.partial(scale, this.img.width / this.image_size.width);
       var canvas = new Canvas();
       var crop_window = _.map(this.crop_window, scale_with_factor, this);
   
