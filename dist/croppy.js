@@ -645,13 +645,13 @@
     },
   
     crop : function() {
-      var scale_with_factor = _.partial(scale, this.img.width / this.image_size.width);
+      var crop_scale = _.partial(scale, this.img.width / this.image_size.width);
       var canvas = new Canvas();
-      var crop_window = _.map(this.crop_window, scale_with_factor, this);
+      var crop_window = _.map(this.crop_window, crop_scale, this);
   
       var position = {
-        x : scale_with_factor(this.origin.x) - crop_window[0],
-        y : scale_with_factor(this.origin.y) - crop_window[1]
+        x : crop_scale(this.origin.x) - crop_window[0],
+        y : crop_scale(this.origin.y) - crop_window[1]
       };
   
       canvas.set_width(crop_window[2] - crop_window[0]);
@@ -677,7 +677,6 @@
       done : function() {
         var image = document.createElement("img");
         image.src = this.crop();
-        document.body.appendChild(image);
         this.trigger("cropped", this.crop());
       },
   
