@@ -16,7 +16,7 @@
     return Math.round(num * scale_factor);
   };
 
-  var Croppy = function(files, element, config) {
+  var Croppy = function(element, config) {
   
     if (!this._can_cut_the_mustard()) {
       throw "Browser does not cut the mustard - cannot continue";
@@ -28,10 +28,29 @@
     // override defaults
     this.config = _.extend({width : this.$el.width()}, config);
   
-    this._readFile(files[0]);
   };
   
   _.extend(Croppy.prototype, Eventable, {
+  
+    readFromUrl : function(url) {
+      this._loadImage(url);
+    },
+  
+    readFromFile : function(files) {
+  
+      var file = files[0];
+  
+      if (!file.type.match('image.*')) { return; }
+  
+      var reader = new FileReader();
+  
+      reader.onload = function(e) {
+        this._loadImage(e.target.result)
+      }.bind(this);
+  
+      // Read in the image file as a data URL.
+      reader.readAsDataURL(file);
+    },
   
     _render : function(img, config) {
       this.ui = new UI();
@@ -54,20 +73,9 @@
       return false;
     },
   
-    _readFile : function(file) {
-  
-      if (!file.type.match('image.*')) { return; }
-  
-      var reader = new FileReader();
-  
-      reader.onload = this._onFileLoaded.bind(this);
-      // Read in the image file as a data URL.
-      reader.readAsDataURL(file);
-    },
-  
-    _onFileLoaded : function(e) {
+    _loadImage : function(src) {
       var img = document.createElement('img');
-      img.src = e.target.result;
+      img.src = src;
   
       img.onload = function(){
         this._render(img, this.config);

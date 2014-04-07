@@ -66,11 +66,11 @@
       e.stopPropagation();
       e.preventDefault();
 
-      console.log(new Croppy(e.dataTransfer.files, "#preview", {
+      (new Croppy("#preview", {
         max_letterbox_height: 20,
         aspect_ratio : "16:9",
         orientation : "landscape"
-      }));
+      })).readFromFile(e.dataTransfer.files);
 
     }
 
