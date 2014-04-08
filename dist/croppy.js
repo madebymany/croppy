@@ -75,11 +75,11 @@
   
     _loadImage : function(src) {
       var img = document.createElement('img');
-      img.src = src;
-  
+      img.crossOrigin = "anonymous";
       img.onload = function(){
         this._render(img, this.config);
       }.bind(this);
+      img.src = src;
     },
   
     _set_el : function(element) {
