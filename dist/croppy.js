@@ -33,7 +33,7 @@
   _.extend(Croppy.prototype, Eventable, {
   
     readFromUrl : function(url) {
-      this._loadImage(url);
+      this._loadImage(url, true);
     },
   
     readFromFile : function(files) {
