@@ -75,7 +75,7 @@
   
     _loadImage : function(src) {
       var img = document.createElement('img');
-      img.crossOrigin = "anonymous";
+      crossOrigin && (img.crossOrigin = "anonymous");
       img.onload = function(){
         this._render(img, this.config);
       }.bind(this);
