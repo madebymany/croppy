@@ -73,7 +73,7 @@
       return false;
     },
   
-    _loadImage : function(src) {
+    _loadImage : function(src, crossOrigin) {
       var img = document.createElement('img');
       crossOrigin && (img.crossOrigin = "anonymous");
       img.onload = function(){
