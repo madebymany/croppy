@@ -46,6 +46,8 @@ _.extend(Croppy.prototype, Eventable, {
     _.forEach(this.ui.items, function(action){
       this.canvas.listenTo(this.ui, "ui:" +  action, this.canvas.actions[action]);
     }, this);
+    this.canvas.listenTo(this.ui, "ui:text:input", this.canvas.handle_text_input);
+    this.canvas.listenTo(this.ui, "ui:text:action", this.canvas.handle_text_action);
   },
 
   _can_cut_the_mustard : function() {

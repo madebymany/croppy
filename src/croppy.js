@@ -1,5 +1,7 @@
 (function(document){
 
+  //= croppy.templates.js
+  //
   //= croppy.functional.js
 
   //= croppy.constructor.js

@@ -17,6 +17,8 @@ var InterfaceCanvas = function(img, config) {
   this._set_mouse_events("addEvent");
   this.draw_to_canvas(this.origin);
 
+  this.on();
+
 };
 
 _.extend(InterfaceCanvas.prototype, Eventable, {
@@ -208,7 +210,7 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
     // otherwise redefine the function
     this._draw_letter_box = function() {
       this.canvas.redraw(function(ctx) {
-        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.fillStyle = "rgba(0,0,0,0.8)";
         ctx.fillRect.apply(ctx, this.letterbox_coordinates[0]);
         ctx.fillRect.apply(ctx, this.letterbox_coordinates[1]);
       }, this);
@@ -359,11 +361,26 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
     this.rotation_angle = (this.rotation_angle >= 360) ? 0 : this.rotation_angle;
   },
 
+  _get_transformed_coords : function(position){
+    var rotation = this.rotation_angle;
+    if (!rotation) {
+      return position;
+    }
+    return {
+      x : (position.x/2) + position.x * Math.cos(-rotation) - position.y * Math.sin(-rotation),
+      y : (position.y/2) + position.x * Math.sin(-rotation) + position.y * Math.cos(-rotation)
+    };
+  },
+
   draw_to_canvas : function(position) {
     position = position || { x : 0, y : 0 };
     this.canvas[this.rotation_angle ? "rotate_and_draw" : "draw"]
-      (position, this.img, this.image_size, this.rotation_angle);
+      (this._get_transformed_coords(position), this.img, this.image_size, this.rotation_angle);
     this._draw_letter_box();
+
+    if (this.text) {
+      this.canvas.render_text(this.text, this.distribution, this.alignment, this.crop_window);
+    }
   },
 
   crop : function() {
@@ -379,9 +396,26 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
     canvas.set_width(crop_window[2] - crop_window[0]);
     canvas.set_height(crop_window[3] - crop_window[1]);
 
-    canvas.draw(position, this.img, this.img);
+    console.log(crop_window[2] - crop_window[0]);
+    console.log(crop_window[3] - crop_window[1]);
+
+    canvas[this.rotation_angle ? "rotate_and_draw" : "draw"](position, this.img, this.img, this.rotation_angle);
+
+    if (this.text) {
+      canvas.render_text(this.text, this.distribution, this.alignment, null, crop_scale(18));
+    }
 
     return canvas.el.toDataURL("image/jpeg");
+  },
+
+  handle_text_input: function(data) {
+    this.text = data;
+    this.draw_to_canvas();
+  },
+
+  handle_text_action: function(type, value) {
+    this[type] = value;
+    this.draw_to_canvas();
   },
 
   actions : {
@@ -404,7 +438,14 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
 
     rotate : function() {
       this._increment_rotation_angle();
-      this.draw_to_canvas();
+      this.draw_to_canvas({
+        x : -(this.image_size.width/2),
+        y : -(this.image_size.height/2)
+      });
+
+      this._set_common_properties();
+      this._perform_zoom();
+      this._snap_to_bounds() || this.draw_to_canvas();
     },
 
     orientation : function() {
@@ -412,7 +453,7 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
       this._set_common_properties();
       this._perform_zoom();
       this._snap_to_bounds() || this.draw_to_canvas();
-    }
+    },
   }
 
 });

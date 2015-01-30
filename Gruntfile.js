@@ -6,6 +6,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-jasmine');
+  grunt.loadNpmTasks('grunt-contrib-jst');
 
   grunt.initConfig({
 
@@ -20,6 +21,14 @@ module.exports = function(grunt) {
         options: {
           specs : 'spec/**/*.spec.js',
           helpers : 'spec/helpers/*.js'
+        }
+      }
+    },
+
+    jst: {
+      compile: {
+        files: {
+          "src/croppy.templates.js": ["src/templates/*"]
         }
       }
     },
@@ -44,8 +53,8 @@ module.exports = function(grunt) {
 
     watch: {
       scripts: {
-        files: ['src/*.js'],
-        tasks: ['rig']
+        files: ['src/*.js', 'src/templates/*.jst'],
+        tasks: ['jst', 'rig']
       }
     },
 
@@ -80,7 +89,8 @@ module.exports = function(grunt) {
   });
 
   // Default task.
-  grunt.registerTask('default', ['rig', 'uglify']);
+  grunt.registerTask('default', ['jst', 'rig']);
   grunt.registerTask('test', ['jasmine']);
+  grunt.registerTask('build', ['default', 'uglify', 'test']);
 
 };

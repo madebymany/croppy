@@ -9,36 +9,51 @@ UI.fn = _.extend(UI.prototype, Eventable, {
   is_enabled : true,
 
   delegateEvents: function() {
-    _.forEach(this.items, function(item){
-      this.$el.delegate(".croppy__" + item, "click", this.dispatch_event.bind(this));
-    }, this);
+    this.$el.on("click", ".js-croppy-btn", this.dispatch_event.bind(this));
+    this.$el.on("keyup", ".js-croppy-headline", this.dispatch_text.bind(this));
+    this.$el.on("change", ".croppy-text__control", this.dispatch_text_button.bind(this));
   },
 
-  items : ["zoomin", "zoomout", "done", "rotate", "orientation"],
+  items : ["zoomin", "zoomout", "done", "rotate", "orientation", "text"],
 
   createEl : function() {
     this.$el = $('<div>', {"class": "croppy__ui"});
   },
 
   render : function() {
-    var template = "";
-    _.forEach(this.items, function(item) {
-      template += this.template({ "action" : item });
-    }, this);
-    this.$el.html(template);
+    this.$el.html(JST["src/templates/button.jst"]());
     return this;
   },
 
+  dispatch_text: function(e) {
+    this.trigger("ui:text:input", e && e.target.value);
+  },
+
+  dispatch_text_button: function(e) {
+    this.trigger("ui:text:action", e.target.name, e.target.value);
+  },
+
   dispatch_event : function(e) {
+    var action = e.target.dataset.action;
     if (this.is_enabled) {
-      this.trigger("ui:" + e.target.dataset.action);
+      this.trigger("ui:" + action);
+    }
+    if (action === "text") {
+      this.toggle_text_ui();
+    }
+  },
+
+  toggle_text_ui: function() {
+    var text_ui = this.$el.find(".croppy-text");
+    if (text_ui.length) {
+      this.dispatch_text();
+      text_ui.remove();
+    } else {
+      this.$el.append(JST["src/templates/text.jst"]);
     }
   },
 
   remove : function() {
     this.$el.undelegate().remove();
-  },
-
-  template : _.template('<a class="croppy-icon croppy__<%=action%>" data-action="<%=action%>"><%=action%></a>')
-
+  }
 });

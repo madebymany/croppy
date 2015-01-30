@@ -1,5 +1,27 @@
 (function(document){
 
+  this["JST"] = this["JST"] || {};
+  
+  this["JST"]["src/templates/button.jst"] = function(obj) {
+  obj || (obj = {});
+  var __t, __p = '', __e = _.escape;
+  with (obj) {
+  __p += '<div class="croppy__actions">\n  <div class="croppy__zoom croppy__action">\n    <a class="croppy-icon croppy__zoomin js-croppy-btn" data-action="zoomin">zoomin</a>\n    <a class="croppy-icon croppy__zoomout js-croppy-btn" data-action="zoomout">zoomout</a>\n    <span class="croppy__action__label">Zoom</span>\n  </div>\n\n  <div class="croppy__rotate croppy__action">\n    <a class="croppy-icon croppy__rotate js-croppy-btn" data-action="rotate">rotate</a>\n    <span class="croppy__action__label">Rotate</span>\n  </div>\n\n  <div class="croppy__text croppy__action">\n    <a class="croppy-icon croppy__text js-croppy-btn" data-action="text">text</a>\n    <span class="croppy__action__label">Text</span>\n  </div>\n\n  <div class="croppy__save croppy__action">\n    <a class="croppy-icon croppy__done js-croppy-btn" data-action="done">done</a>\n    <span class="croppy__action__label">Save</span>\n  </div>\n</div>\n';
+  
+  }
+  return __p
+  };
+  
+  this["JST"]["src/templates/text.jst"] = function(obj) {
+  obj || (obj = {});
+  var __t, __p = '', __e = _.escape;
+  with (obj) {
+  __p += '<div class="croppy-text">\n  <div class="croppy-text__left">\n    <label for="croppy_text_headline" class="croppy-text__label">Headline</label>\n    <textarea id="croppy_text_headline" class="js-croppy-headline"></textarea>\n  </div>\n  <div class="croppy-text__right">\n    <fieldset class="croppy-text__controls">\n      <legend class="croppy-text__label">Alignment</legend>\n        <input class="croppy-text__control" id="croppy_align_left" type="radio" checked name="alignment" value="left" />\n        <label for="croppy_align_left" class="croppy-text__btn">left</label>\n        <input class="croppy-text__control" id="croppy_align_center" type="radio" name="alignment" value="center" />\n        <label for="croppy_align_center" class="croppy-text__btn">center</label>\n        <input class="croppy-text__control" id="croppy_align_right" type="radio" name="alignment" value="right" />\n        <label for="croppy_align_right" class="croppy-text__btn">right</label>\n    </fieldset>\n    <fieldset class="croppy-text__controls">\n      <legend class="croppy-text__label">Distribution</legend>\n        <input class="croppy-text__control" id="croppy_dist_top" type="radio" name="distribution" value="top" />\n        <label for="croppy_dist_top" class="croppy-text__btn">top</label>\n        <input class="croppy-text__control" id="croppy_dist_middle" type="radio" name="distribution" value="middle" />\n        <label for="croppy_dist_middle" class="croppy-text__btn">middle</label>\n        <input class="croppy-text__control" id="croppy_dist_bottom" type="radio" checked name="distribution" value="bottom" />\n        <label for="croppy_dist_bottom" class="croppy-text__btn">bottom</label>\n    </fieldset>\n  </div>\n </div>\n\n';
+  
+  }
+  return __p
+  };
+  //
   var calculate_aspect_ratio = function(width, height) {
     return height / width;
   };
@@ -64,6 +86,8 @@
       _.forEach(this.ui.items, function(action){
         this.canvas.listenTo(this.ui, "ui:" +  action, this.canvas.actions[action]);
       }, this);
+      this.canvas.listenTo(this.ui, "ui:text:input", this.canvas.handle_text_input);
+      this.canvas.listenTo(this.ui, "ui:text:action", this.canvas.handle_text_action);
     },
   
     _can_cut_the_mustard : function() {
@@ -246,24 +270,13 @@
       this.height = this.el.height = height;
     },
   
-    rotate_and_draw : function(position, img, image_size, rotation_angle) {
+    rotate_and_draw : function(position, img, image_size, rotation) {
       // save the current co-ordinate system
       this.ctx.save();
-      // move to the middle of where we want to draw our image
       this.ctx.translate((image_size.width/2),(image_size.height/2));
-      // rotate around that point, converting our
-      // angle from degrees to radians
-      this.ctx.rotate(rotation_angle * Math.PI/180);
-      // draw it up and to the left by half the width
-      // and height of the image
-  
-      position = {
-        x : position.x - (image_size.width/2),
-        y : position.y - (image_size.height/2)
-      };
-  
+      this.ctx.rotate(rotation * Math.PI/180);
+      this.ctx.translate(-(image_size.width/2),-(image_size.height/2));
       this.draw(position, img, image_size);
-      // and restore the co-ords to how they were when we began
       this.ctx.restore();
     },
   
@@ -280,8 +293,116 @@
       ctx.setTransform(1,0,0,1,0,0);
       callback.call(scope, ctx);
       ctx.restore();
-    }
+    },
   
+    render_overlay: function() {
+      this.redraw(function(ctx) {
+        ctx.globalAlpha = 0.2;
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, this.get_width(), this.get_height());
+        ctx.globalAlpha = 1;
+      }, this);
+    },
+  
+    calculate_offset: function(dimension, a, b) {
+      return Math.round((dimension - ((a - b))) / 2);
+    },
+  
+    render_text: function(text, distribution, alignment, crop_window, size) {
+      this.render_overlay();
+      this.redraw(function(ctx) {
+  
+        var fontSize = size || 18;
+        var lineHeight = Math.round(fontSize * 1.5)
+        var padding = lineHeight;
+        var width = this.get_width();
+        var height = this.get_height();
+        var x_letterbox_offset = crop_window ? this.calculate_offset(width, crop_window[2], crop_window[0]) : 0;
+        var y_letterbox_offset = crop_window ? this.calculate_offset(height, crop_window[3], crop_window[1]) : 0;
+  
+        //console.log(x_letterbox_offset);
+        //console.log(y_letterbox_offset);
+        //console.log(height)
+  
+        var maxWidth = Math.round(width - (x_letterbox_offset * 2) - (padding * 2));
+        var x = x_letterbox_offset;
+        var y = y_letterbox_offset;
+  
+  
+        ctx.font = fontSize + 'pt Reem';
+        ctx.fillStyle = "#fff";
+        ctx.textBaseline = 'middle';
+  
+        // Text shadow:
+        ctx.shadowColor = "rgba(0,0,0,0.85)";
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 2;
+        ctx.shadowBlur = 3;
+  
+        // Text alignment:
+        if (alignment === 'center') {
+          ctx.textAlign = 'center';
+          x = width / 2;
+          //maxWidth = width - width / 3;
+        } else if (alignment === 'right' ) {
+          ctx.textAlign = 'right';
+          x = width - x_letterbox_offset - padding;
+        } else {
+          ctx.textAlign = 'left';
+          x = x_letterbox_offset + padding;
+        }
+  
+        var paras = text.split(/\r?\n|\r/g);
+  
+        paras = paras.map(function(para){
+  
+          var line  = '';
+          var lines = [];
+  
+          var words = para.split(' ');
+  
+          for (var n = 0; n < words.length; n++) {
+            var testLine  = line + words[n] + ' ';
+            var metrics   = ctx.measureText( testLine );
+            var testWidth = metrics.width;
+  
+            if (testWidth > maxWidth && n > 0) {
+              lines.push(line.trim());
+              line = words[n] + ' ';
+            } else {
+              line = testLine;
+            }
+          }
+  
+          lines.push(line.trim());
+          return lines;
+        });
+  
+        var lineBreaks = paras.reduce(function(memo, para){
+          return memo + para.length;
+        }, 0) + paras.length;
+  
+        var heightOffset = lineHeight * (lineBreaks - 2);
+  
+        console.log(lineBreaks)
+        if (distribution === 'top') {
+          y = y_letterbox_offset + padding;
+        } else if (distribution === 'middle'){
+          y = Math.round((height - heightOffset) / 2);
+        } else {
+          y = height - y_letterbox_offset - padding - heightOffset;
+        }
+  
+        paras.forEach(function(para, i){
+          para.forEach(function(line){
+            ctx.fillText(line, x, y);
+            y += lineHeight;
+          });
+        });
+  
+        ctx.shadowColor = 'transparent';
+      }, this);
+    }
   };
 
   var InterfaceCanvas = function(img, config) {
@@ -302,6 +423,8 @@
   
     this._set_mouse_events("addEvent");
     this.draw_to_canvas(this.origin);
+  
+    this.on();
   
   };
   
@@ -494,7 +617,7 @@
       // otherwise redefine the function
       this._draw_letter_box = function() {
         this.canvas.redraw(function(ctx) {
-          ctx.fillStyle = "rgba(0,0,0,0.6)";
+          ctx.fillStyle = "rgba(0,0,0,0.8)";
           ctx.fillRect.apply(ctx, this.letterbox_coordinates[0]);
           ctx.fillRect.apply(ctx, this.letterbox_coordinates[1]);
         }, this);
@@ -645,11 +768,26 @@
       this.rotation_angle = (this.rotation_angle >= 360) ? 0 : this.rotation_angle;
     },
   
+    _get_transformed_coords : function(position){
+      var rotation = this.rotation_angle;
+      if (!rotation) {
+        return position;
+      }
+      return {
+        x : (position.x/2) + position.x * Math.cos(-rotation) - position.y * Math.sin(-rotation),
+        y : (position.y/2) + position.x * Math.sin(-rotation) + position.y * Math.cos(-rotation)
+      };
+    },
+  
     draw_to_canvas : function(position) {
       position = position || { x : 0, y : 0 };
       this.canvas[this.rotation_angle ? "rotate_and_draw" : "draw"]
-        (position, this.img, this.image_size, this.rotation_angle);
+        (this._get_transformed_coords(position), this.img, this.image_size, this.rotation_angle);
       this._draw_letter_box();
+  
+      if (this.text) {
+        this.canvas.render_text(this.text, this.distribution, this.alignment, this.crop_window);
+      }
     },
   
     crop : function() {
@@ -665,9 +803,26 @@
       canvas.set_width(crop_window[2] - crop_window[0]);
       canvas.set_height(crop_window[3] - crop_window[1]);
   
-      canvas.draw(position, this.img, this.img);
+      console.log(crop_window[2] - crop_window[0]);
+      console.log(crop_window[3] - crop_window[1]);
+  
+      canvas[this.rotation_angle ? "rotate_and_draw" : "draw"](position, this.img, this.img, this.rotation_angle);
+  
+      if (this.text) {
+        canvas.render_text(this.text, this.distribution, this.alignment, null, crop_scale(18));
+      }
   
       return canvas.el.toDataURL("image/jpeg");
+    },
+  
+    handle_text_input: function(data) {
+      this.text = data;
+      this.draw_to_canvas();
+    },
+  
+    handle_text_action: function(type, value) {
+      this[type] = value;
+      this.draw_to_canvas();
     },
   
     actions : {
@@ -690,7 +845,14 @@
   
       rotate : function() {
         this._increment_rotation_angle();
-        this.draw_to_canvas();
+        this.draw_to_canvas({
+          x : -(this.image_size.width/2),
+          y : -(this.image_size.height/2)
+        });
+  
+        this._set_common_properties();
+        this._perform_zoom();
+        this._snap_to_bounds() || this.draw_to_canvas();
       },
   
       orientation : function() {
@@ -698,7 +860,7 @@
         this._set_common_properties();
         this._perform_zoom();
         this._snap_to_bounds() || this.draw_to_canvas();
-      }
+      },
     }
   
   });
@@ -714,38 +876,53 @@
     is_enabled : true,
   
     delegateEvents: function() {
-      _.forEach(this.items, function(item){
-        this.$el.delegate(".croppy__" + item, "click", this.dispatch_event.bind(this));
-      }, this);
+      this.$el.on("click", ".js-croppy-btn", this.dispatch_event.bind(this));
+      this.$el.on("keyup", ".js-croppy-headline", this.dispatch_text.bind(this));
+      this.$el.on("change", ".croppy-text__control", this.dispatch_text_button.bind(this));
     },
   
-    items : ["zoomin", "zoomout", "done", "rotate", "orientation"],
+    items : ["zoomin", "zoomout", "done", "rotate", "orientation", "text"],
   
     createEl : function() {
       this.$el = $('<div>', {"class": "croppy__ui"});
     },
   
     render : function() {
-      var template = "";
-      _.forEach(this.items, function(item) {
-        template += this.template({ "action" : item });
-      }, this);
-      this.$el.html(template);
+      this.$el.html(JST["src/templates/button.jst"]());
       return this;
     },
   
+    dispatch_text: function(e) {
+      this.trigger("ui:text:input", e && e.target.value);
+    },
+  
+    dispatch_text_button: function(e) {
+      this.trigger("ui:text:action", e.target.name, e.target.value);
+    },
+  
     dispatch_event : function(e) {
+      var action = e.target.dataset.action;
       if (this.is_enabled) {
-        this.trigger("ui:" + e.target.dataset.action);
+        this.trigger("ui:" + action);
+      }
+      if (action === "text") {
+        this.toggle_text_ui();
+      }
+    },
+  
+    toggle_text_ui: function() {
+      var text_ui = this.$el.find(".croppy-text");
+      if (text_ui.length) {
+        this.dispatch_text();
+        text_ui.remove();
+      } else {
+        this.$el.append(JST["src/templates/text.jst"]);
       }
     },
   
     remove : function() {
       this.$el.undelegate().remove();
-    },
-  
-    template : _.template('<a class="croppy-icon croppy__<%=action%>" data-action="<%=action%>"><%=action%></a>')
-  
+    }
   });
 
   window.Croppy = Croppy;

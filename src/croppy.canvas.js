@@ -55,24 +55,13 @@ Canvas.prototype = {
     this.height = this.el.height = height;
   },
 
-  rotate_and_draw : function(position, img, image_size, rotation_angle) {
+  rotate_and_draw : function(position, img, image_size, rotation) {
     // save the current co-ordinate system
     this.ctx.save();
-    // move to the middle of where we want to draw our image
     this.ctx.translate((image_size.width/2),(image_size.height/2));
-    // rotate around that point, converting our
-    // angle from degrees to radians
-    this.ctx.rotate(rotation_angle * Math.PI/180);
-    // draw it up and to the left by half the width
-    // and height of the image
-
-    position = {
-      x : position.x - (image_size.width/2),
-      y : position.y - (image_size.height/2)
-    };
-
+    this.ctx.rotate(rotation * Math.PI/180);
+    this.ctx.translate(-(image_size.width/2),-(image_size.height/2));
     this.draw(position, img, image_size);
-    // and restore the co-ords to how they were when we began
     this.ctx.restore();
   },
 
@@ -89,6 +78,114 @@ Canvas.prototype = {
     ctx.setTransform(1,0,0,1,0,0);
     callback.call(scope, ctx);
     ctx.restore();
-  }
+  },
 
+  render_overlay: function() {
+    this.redraw(function(ctx) {
+      ctx.globalAlpha = 0.2;
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, this.get_width(), this.get_height());
+      ctx.globalAlpha = 1;
+    }, this);
+  },
+
+  calculate_offset: function(dimension, a, b) {
+    return Math.round((dimension - ((a - b))) / 2);
+  },
+
+  render_text: function(text, distribution, alignment, crop_window, size) {
+    this.render_overlay();
+    this.redraw(function(ctx) {
+
+      var fontSize = size || 18;
+      var lineHeight = Math.round(fontSize * 1.5)
+      var padding = lineHeight;
+      var width = this.get_width();
+      var height = this.get_height();
+      var x_letterbox_offset = crop_window ? this.calculate_offset(width, crop_window[2], crop_window[0]) : 0;
+      var y_letterbox_offset = crop_window ? this.calculate_offset(height, crop_window[3], crop_window[1]) : 0;
+
+      //console.log(x_letterbox_offset);
+      //console.log(y_letterbox_offset);
+      //console.log(height)
+
+      var maxWidth = Math.round(width - (x_letterbox_offset * 2) - (padding * 2));
+      var x = x_letterbox_offset;
+      var y = y_letterbox_offset;
+
+
+      ctx.font = fontSize + 'pt Reem';
+      ctx.fillStyle = "#fff";
+      ctx.textBaseline = 'middle';
+
+      // Text shadow:
+      ctx.shadowColor = "rgba(0,0,0,0.85)";
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 2;
+      ctx.shadowBlur = 3;
+
+      // Text alignment:
+      if (alignment === 'center') {
+        ctx.textAlign = 'center';
+        x = width / 2;
+        //maxWidth = width - width / 3;
+      } else if (alignment === 'right' ) {
+        ctx.textAlign = 'right';
+        x = width - x_letterbox_offset - padding;
+      } else {
+        ctx.textAlign = 'left';
+        x = x_letterbox_offset + padding;
+      }
+
+      var paras = text.split(/\r?\n|\r/g);
+
+      paras = paras.map(function(para){
+
+        var line  = '';
+        var lines = [];
+
+        var words = para.split(' ');
+
+        for (var n = 0; n < words.length; n++) {
+          var testLine  = line + words[n] + ' ';
+          var metrics   = ctx.measureText( testLine );
+          var testWidth = metrics.width;
+
+          if (testWidth > maxWidth && n > 0) {
+            lines.push(line.trim());
+            line = words[n] + ' ';
+          } else {
+            line = testLine;
+          }
+        }
+
+        lines.push(line.trim());
+        return lines;
+      });
+
+      var lineBreaks = paras.reduce(function(memo, para){
+        return memo + para.length;
+      }, 0) + paras.length;
+
+      var heightOffset = lineHeight * (lineBreaks - 2);
+
+      console.log(lineBreaks)
+      if (distribution === 'top') {
+        y = y_letterbox_offset + padding;
+      } else if (distribution === 'middle'){
+        y = Math.round((height - heightOffset) / 2);
+      } else {
+        y = height - y_letterbox_offset - padding - heightOffset;
+      }
+
+      paras.forEach(function(para, i){
+        para.forEach(function(line){
+          ctx.fillText(line, x, y);
+          y += lineHeight;
+        });
+      });
+
+      ctx.shadowColor = 'transparent';
+    }, this);
+  }
 };
