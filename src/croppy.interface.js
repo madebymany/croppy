@@ -16,7 +16,6 @@ var InterfaceCanvas = function(img, config) {
 
   this._set_mouse_events("addEvent");
   this.draw_to_canvas(this.origin);
-
 };
 
 _.extend(InterfaceCanvas.prototype, Eventable, {
@@ -276,6 +275,7 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
   coordiate_correction : function(image_dimension, top_left_offset, bottom_right_offset, origin_offset) {
 
     var difference = (image_dimension + origin_offset);
+    console.log(image_dimension, origin_offset, difference);
 
     // too far down or right (snap back to TOP or LHS)
     if (difference > (image_dimension + top_left_offset)) {
@@ -299,17 +299,20 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
 
   _snap_to_bounds : function() {
 
+    var width = this._rotated_dimension(this.image_size.width, this.image_size.height);
+    var height = this._rotated_dimension(this.image_size.height, this.image_size.width);
+
     // calculate the horzontal (x) and vertical (y) correction needed
     // to snap the image back into place
     var correction = {
       x : this.coordiate_correction(
-        this.image_size.width,
+        width,
         this.crop_window[0],
         this.crop_window[2],
         this.origin.x
       ),
       y : this.coordiate_correction(
-        this.image_size.height,
+        height,
         this.crop_window[1],
         this.crop_window[3],
         this.origin.y
@@ -359,10 +362,29 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
     this.rotation_angle = (this.rotation_angle >= 360) ? 0 : this.rotation_angle;
   },
 
+  _rotated_coordinates: function(position) {
+    if(!this.rotation_angle) {
+      return position;
+    }
+    var radians = this.rotation_angle * Math.PI/180;
+    return {
+      x: Math.round(position.x * Math.cos(radians) + position.y * Math.sin(radians)),
+      y: Math.round(-position.x * Math.sin(radians) + position.y * Math.cos(radians))
+    };
+  },
+
+  _rotated_dimension: function(first, second) {
+    if(!this.rotation_angle) {
+      return first;
+    }
+    var radians = this.rotation_angle * Math.PI/180;
+    return  Math.round(first * Math.cos(radians) + second * Math.sin(radians));
+  },
+
   draw_to_canvas : function(position) {
     position = position || { x : 0, y : 0 };
     this.canvas[this.rotation_angle ? "rotate_and_draw" : "draw"]
-      (position, this.img, this.image_size, this.rotation_angle);
+      (this._rotated_coordinates(position), this.img, this.image_size, this.rotation_angle);
     this._draw_letter_box();
   },
 
