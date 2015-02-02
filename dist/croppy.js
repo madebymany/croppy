@@ -1,12 +1,14 @@
 (function(document){
 
+  var DEFAULT_TEXT = "Write your headline here";
+
   this["JST"] = this["JST"] || {};
   
   this["JST"]["src/templates/button.jst"] = function(obj) {
   obj || (obj = {});
   var __t, __p = '', __e = _.escape;
   with (obj) {
-  __p += '<div class="croppy__actions">\n  <div class="croppy__zoom croppy__action">\n    <a class="croppy-icon croppy__zoomin js-croppy-btn" data-action="zoomin">zoomin</a>\n    <a class="croppy-icon croppy__zoomout js-croppy-btn" data-action="zoomout">zoomout</a>\n    <span class="croppy__action__label">Zoom</span>\n  </div>\n\n  <div class="croppy__rotate croppy__action">\n    <a class="croppy-icon croppy__rotate js-croppy-btn" data-action="rotate">rotate</a>\n    <span class="croppy__action__label">Rotate</span>\n  </div>\n\n  <div class="croppy__text croppy__action">\n    <a class="croppy-icon croppy__text js-croppy-btn" data-action="text">text</a>\n    <span class="croppy__action__label">Text</span>\n  </div>\n\n  <div class="croppy__save croppy__action">\n    <a class="croppy-icon croppy__done js-croppy-btn" data-action="done">done</a>\n    <span class="croppy__action__label">Save</span>\n  </div>\n</div>\n';
+  __p += '<div class="croppy__actions">\n  <div class="croppy__zoom croppy__action">\n    <a class="croppy-icon croppy__zoomin js-croppy-btn" data-action="zoomin">zoomin</a>\n    <a class="croppy-icon croppy__zoomout js-croppy-btn" data-action="zoomout">zoomout</a>\n    <span class="croppy__action__label">Zoom</span>\n  </div>\n\n  <div class="croppy__rotate croppy__action">\n    <a class="croppy-icon croppy__rotate js-croppy-btn" data-action="rotate">rotate</a>\n    <span class="croppy__action__label">Rotate</span>\n  </div>\n\n  <div class="croppy__text croppy__action">\n    <a class="croppy-icon croppy__text js-croppy-btn" data-action="text">croppytext</a>\n    <span class="croppy__action__label">Text</span>\n  </div>\n\n  <div class="croppy__save croppy__action">\n    <a class="croppy-icon croppy__done js-croppy-btn" data-action="done">done</a>\n    <span class="croppy__action__label">Save</span>\n  </div>\n</div>\n';
   
   }
   return __p
@@ -16,7 +18,9 @@
   obj || (obj = {});
   var __t, __p = '', __e = _.escape;
   with (obj) {
-  __p += '<div class="croppy-text">\n  <div class="croppy-text__left">\n    <label for="croppy_text_headline" class="croppy-text__label">Headline</label>\n    <textarea id="croppy_text_headline" class="js-croppy-headline"></textarea>\n  </div>\n  <div class="croppy-text__right">\n    <fieldset class="croppy-text__controls">\n      <legend class="croppy-text__label">Alignment</legend>\n        <input class="croppy-text__control" id="croppy_align_left" type="radio" checked name="alignment" value="left" />\n        <label for="croppy_align_left" class="croppy-text__btn">left</label>\n        <input class="croppy-text__control" id="croppy_align_center" type="radio" name="alignment" value="center" />\n        <label for="croppy_align_center" class="croppy-text__btn">center</label>\n        <input class="croppy-text__control" id="croppy_align_right" type="radio" name="alignment" value="right" />\n        <label for="croppy_align_right" class="croppy-text__btn">right</label>\n    </fieldset>\n    <fieldset class="croppy-text__controls">\n      <legend class="croppy-text__label">Distribution</legend>\n        <input class="croppy-text__control" id="croppy_dist_top" type="radio" name="distribution" value="top" />\n        <label for="croppy_dist_top" class="croppy-text__btn">top</label>\n        <input class="croppy-text__control" id="croppy_dist_middle" type="radio" name="distribution" value="middle" />\n        <label for="croppy_dist_middle" class="croppy-text__btn">middle</label>\n        <input class="croppy-text__control" id="croppy_dist_bottom" type="radio" checked name="distribution" value="bottom" />\n        <label for="croppy_dist_bottom" class="croppy-text__btn">bottom</label>\n    </fieldset>\n  </div>\n </div>\n\n';
+  __p += '<div class="croppy-text">\n  <div class="croppy-text__left">\n    <label for="croppy_text_headline" class="croppy-text__label">Headline</label>\n    <textarea id="croppy_text_headline" class="js-croppy-headline">' +
+  ((__t = ( default_text )) == null ? '' : __t) +
+  '</textarea>\n  </div>\n  <div class="croppy-text__right">\n    <fieldset class="croppy-text__controls">\n      <legend class="croppy-text__label">Alignment</legend>\n        <input class="croppy-text__control" id="croppy_align_left" type="radio" checked name="alignment" value="left" />\n        <label for="croppy_align_left" class="croppy-text__btn">left</label>\n        <input class="croppy-text__control" id="croppy_align_center" type="radio" name="alignment" value="center" />\n        <label for="croppy_align_center" class="croppy-text__btn">center</label>\n        <input class="croppy-text__control" id="croppy_align_right" type="radio" name="alignment" value="right" />\n        <label for="croppy_align_right" class="croppy-text__btn">right</label>\n    </fieldset>\n    <fieldset class="croppy-text__controls">\n      <legend class="croppy-text__label">Distribution</legend>\n        <input class="croppy-text__control" id="croppy_dist_top" type="radio" name="distribution" value="top" />\n        <label for="croppy_dist_top" class="croppy-text__btn">top</label>\n        <input class="croppy-text__control" id="croppy_dist_middle" type="radio" name="distribution" value="middle" />\n        <label for="croppy_dist_middle" class="croppy-text__btn">middle</label>\n        <input class="croppy-text__control" id="croppy_dist_bottom" type="radio" checked name="distribution" value="bottom" />\n        <label for="croppy_dist_bottom" class="croppy-text__btn">bottom</label>\n    </fieldset>\n  </div>\n </div>\n\n';
   
   }
   return __p
@@ -297,7 +301,7 @@
   
     render_overlay: function() {
       this.redraw(function(ctx) {
-        ctx.globalAlpha = 0.2;
+        ctx.globalAlpha = 0.3;
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, this.get_width(), this.get_height());
         ctx.globalAlpha = 1;
@@ -308,21 +312,17 @@
       return Math.round((dimension - ((a - b))) / 2);
     },
   
-    render_text: function(text, distribution, alignment, crop_window, size) {
+    render_text: function(text, distribution, alignment, crop_window, scaleFn) {
       this.render_overlay();
       this.redraw(function(ctx) {
   
-        var fontSize = size || 18;
-        var lineHeight = Math.round(fontSize * 1.5)
-        var padding = lineHeight;
+        var fontSize = scaleFn ? scaleFn(18) : 18;
+        var lineHeight = Math.round(fontSize * 1.7)
+        var padding = Math.round(fontSize * 1.2);
         var width = this.get_width();
         var height = this.get_height();
         var x_letterbox_offset = crop_window ? this.calculate_offset(width, crop_window[2], crop_window[0]) : 0;
         var y_letterbox_offset = crop_window ? this.calculate_offset(height, crop_window[3], crop_window[1]) : 0;
-  
-        //console.log(x_letterbox_offset);
-        //console.log(y_letterbox_offset);
-        //console.log(height)
   
         var maxWidth = Math.round(width - (x_letterbox_offset * 2) - (padding * 2));
         var x = x_letterbox_offset;
@@ -334,10 +334,10 @@
         ctx.textBaseline = 'middle';
   
         // Text shadow:
-        ctx.shadowColor = "rgba(0,0,0,0.85)";
+        ctx.shadowColor = "#000000";
         ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 2;
-        ctx.shadowBlur = 3;
+        ctx.shadowOffsetY = scaleFn ? scaleFn(1) : 1;
+        ctx.shadowBlur = scaleFn ? scaleFn(1) : 1;
   
         // Text alignment:
         if (alignment === 'center') {
@@ -380,17 +380,16 @@
   
         var lineBreaks = paras.reduce(function(memo, para){
           return memo + para.length;
-        }, 0) + paras.length;
+        }, -1);
   
-        var heightOffset = lineHeight * (lineBreaks - 2);
+        var heightOffset = lineHeight * (lineBreaks);
   
-        console.log(lineBreaks)
         if (distribution === 'top') {
-          y = y_letterbox_offset + padding;
+          y = y_letterbox_offset + (padding + (lineHeight/2));
         } else if (distribution === 'middle'){
           y = Math.round((height - heightOffset) / 2);
         } else {
-          y = height - y_letterbox_offset - padding - heightOffset;
+          y = height - y_letterbox_offset - (padding + (lineHeight/2)) - heightOffset;
         }
   
         paras.forEach(function(para, i){
@@ -708,6 +707,10 @@
   
     _snap_to_bounds : function() {
   
+      if(this.rotation_angle) {
+        return false;
+      }
+  
       // calculate the horzontal (x) and vertical (y) correction needed
       // to snap the image back into place
       var correction = {
@@ -769,13 +772,13 @@
     },
   
     _get_transformed_coords : function(position){
-      var rotation = this.rotation_angle;
-      if (!rotation) {
+      if(!this.rotation_angle) {
         return position;
       }
+      var radians = this.rotation_angle * Math.PI/180;
       return {
-        x : (position.x/2) + position.x * Math.cos(-rotation) - position.y * Math.sin(-rotation),
-        y : (position.y/2) + position.x * Math.sin(-rotation) + position.y * Math.cos(-rotation)
+        x: Math.round(position.x * Math.cos(radians) + position.y * Math.sin(radians)),
+        y: Math.round(-position.x * Math.sin(radians) + position.y * Math.cos(radians))
       };
     },
   
@@ -803,20 +806,18 @@
       canvas.set_width(crop_window[2] - crop_window[0]);
       canvas.set_height(crop_window[3] - crop_window[1]);
   
-      console.log(crop_window[2] - crop_window[0]);
-      console.log(crop_window[3] - crop_window[1]);
-  
-      canvas[this.rotation_angle ? "rotate_and_draw" : "draw"](position, this.img, this.img, this.rotation_angle);
+      canvas[this.rotation_angle ? "rotate_and_draw" : "draw"](
+          this._get_transformed_coords(position), this.img, this.img, this.rotation_angle);
   
       if (this.text) {
-        canvas.render_text(this.text, this.distribution, this.alignment, null, crop_scale(18));
+        canvas.render_text(this.text, this.distribution, this.alignment, null, crop_scale);
       }
   
       return canvas.el.toDataURL("image/jpeg");
     },
   
     handle_text_input: function(data) {
-      this.text = data;
+      this.text = data || DEFAULT_TEXT;
       this.draw_to_canvas();
     },
   
@@ -907,6 +908,7 @@
       }
       if (action === "text") {
         this.toggle_text_ui();
+        this.dispatch_text();
       }
     },
   
@@ -916,7 +918,7 @@
         this.dispatch_text();
         text_ui.remove();
       } else {
-        this.$el.append(JST["src/templates/text.jst"]);
+        this.$el.append(JST["src/templates/text.jst"]({default_text: DEFAULT_TEXT}));
       }
     },
   

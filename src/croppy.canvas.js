@@ -82,7 +82,7 @@ Canvas.prototype = {
 
   render_overlay: function() {
     this.redraw(function(ctx) {
-      ctx.globalAlpha = 0.2;
+      ctx.globalAlpha = 0.3;
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, this.get_width(), this.get_height());
       ctx.globalAlpha = 1;
@@ -93,21 +93,17 @@ Canvas.prototype = {
     return Math.round((dimension - ((a - b))) / 2);
   },
 
-  render_text: function(text, distribution, alignment, crop_window, size) {
+  render_text: function(text, distribution, alignment, crop_window, scaleFn) {
     this.render_overlay();
     this.redraw(function(ctx) {
 
-      var fontSize = size || 18;
-      var lineHeight = Math.round(fontSize * 1.5)
-      var padding = lineHeight;
+      var fontSize = scaleFn ? scaleFn(18) : 18;
+      var lineHeight = Math.round(fontSize * 1.7)
+      var padding = Math.round(fontSize * 1.2);
       var width = this.get_width();
       var height = this.get_height();
       var x_letterbox_offset = crop_window ? this.calculate_offset(width, crop_window[2], crop_window[0]) : 0;
       var y_letterbox_offset = crop_window ? this.calculate_offset(height, crop_window[3], crop_window[1]) : 0;
-
-      //console.log(x_letterbox_offset);
-      //console.log(y_letterbox_offset);
-      //console.log(height)
 
       var maxWidth = Math.round(width - (x_letterbox_offset * 2) - (padding * 2));
       var x = x_letterbox_offset;
@@ -119,10 +115,10 @@ Canvas.prototype = {
       ctx.textBaseline = 'middle';
 
       // Text shadow:
-      ctx.shadowColor = "rgba(0,0,0,0.85)";
+      ctx.shadowColor = "#000000";
       ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 2;
-      ctx.shadowBlur = 3;
+      ctx.shadowOffsetY = scaleFn ? scaleFn(1) : 1;
+      ctx.shadowBlur = scaleFn ? scaleFn(1) : 1;
 
       // Text alignment:
       if (alignment === 'center') {
@@ -165,17 +161,16 @@ Canvas.prototype = {
 
       var lineBreaks = paras.reduce(function(memo, para){
         return memo + para.length;
-      }, 0) + paras.length;
+      }, -1);
 
-      var heightOffset = lineHeight * (lineBreaks - 2);
+      var heightOffset = lineHeight * (lineBreaks);
 
-      console.log(lineBreaks)
       if (distribution === 'top') {
-        y = y_letterbox_offset + padding;
+        y = y_letterbox_offset + (padding + (lineHeight/2));
       } else if (distribution === 'middle'){
         y = Math.round((height - heightOffset) / 2);
       } else {
-        y = height - y_letterbox_offset - padding - heightOffset;
+        y = height - y_letterbox_offset - (padding + (lineHeight/2)) - heightOffset;
       }
 
       paras.forEach(function(para, i){

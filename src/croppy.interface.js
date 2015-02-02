@@ -301,6 +301,10 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
 
   _snap_to_bounds : function() {
 
+    if(this.rotation_angle) {
+      return false;
+    }
+
     // calculate the horzontal (x) and vertical (y) correction needed
     // to snap the image back into place
     var correction = {
@@ -362,13 +366,13 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
   },
 
   _get_transformed_coords : function(position){
-    var rotation = this.rotation_angle;
-    if (!rotation) {
+    if(!this.rotation_angle) {
       return position;
     }
+    var radians = this.rotation_angle * Math.PI/180;
     return {
-      x : (position.x/2) + position.x * Math.cos(-rotation) - position.y * Math.sin(-rotation),
-      y : (position.y/2) + position.x * Math.sin(-rotation) + position.y * Math.cos(-rotation)
+      x: Math.round(position.x * Math.cos(radians) + position.y * Math.sin(radians)),
+      y: Math.round(-position.x * Math.sin(radians) + position.y * Math.cos(radians))
     };
   },
 
@@ -396,20 +400,18 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
     canvas.set_width(crop_window[2] - crop_window[0]);
     canvas.set_height(crop_window[3] - crop_window[1]);
 
-    console.log(crop_window[2] - crop_window[0]);
-    console.log(crop_window[3] - crop_window[1]);
-
-    canvas[this.rotation_angle ? "rotate_and_draw" : "draw"](position, this.img, this.img, this.rotation_angle);
+    canvas[this.rotation_angle ? "rotate_and_draw" : "draw"](
+        this._get_transformed_coords(position), this.img, this.img, this.rotation_angle);
 
     if (this.text) {
-      canvas.render_text(this.text, this.distribution, this.alignment, null, crop_scale(18));
+      canvas.render_text(this.text, this.distribution, this.alignment, null, crop_scale);
     }
 
     return canvas.el.toDataURL("image/jpeg");
   },
 
   handle_text_input: function(data) {
-    this.text = data;
+    this.text = data || DEFAULT_TEXT;
     this.draw_to_canvas();
   },
 

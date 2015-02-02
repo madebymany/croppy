@@ -40,6 +40,7 @@ UI.fn = _.extend(UI.prototype, Eventable, {
     }
     if (action === "text") {
       this.toggle_text_ui();
+      this.dispatch_text();
     }
   },
 
@@ -49,7 +50,7 @@ UI.fn = _.extend(UI.prototype, Eventable, {
       this.dispatch_text();
       text_ui.remove();
     } else {
-      this.$el.append(JST["src/templates/text.jst"]);
+      this.$el.append(JST["src/templates/text.jst"]({default_text: DEFAULT_TEXT}));
     }
   },
 

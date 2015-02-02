@@ -1,5 +1,7 @@
 (function(document){
 
+  var DEFAULT_TEXT = "Write your headline here";
+
   //= croppy.templates.js
   //
   //= croppy.functional.js
