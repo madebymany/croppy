@@ -10,6 +10,15 @@
     <span class="croppy__action__label">Rotate</span>
   </div>
 
+  <% if (typeof enable_aspect_ratio !== "undefined" && enable_aspect_ratio) { %>
+  <div class="croppy__zoom croppy__action">
+    <a class="croppy-icon croppy__16-x-9 js-croppy-btn" data-action="16:9">16:9</a>
+    <a class="croppy-icon croppy__4-x-3 js-croppy-btn" data-action="4:3">4:3</a>
+    <a class="croppy-icon croppy__1-x-1 js-croppy-btn" data-action="1:1">1:1</a>
+    <span class="croppy__action__label">Image ratio</span>
+  </div>
+  <% } %>
+
   <div class="croppy__text croppy__action">
     <a class="croppy-icon croppy__text js-croppy-btn" data-action="text">croppytext</a>
     <span class="croppy__action__label">Text</span>

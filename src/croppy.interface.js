@@ -12,6 +12,7 @@ var InterfaceCanvas = function(img, config) {
 
   this._set_canvas();
 
+  this._set_aspect_ratio(this.config.aspect_ratio);
   this._set_common_properties();
 
   this._set_mouse_events("addEvent");
@@ -31,12 +32,11 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
   },
 
   _set_canvas : function() {
-    this.canvas = new Canvas();
-    this.crop_canvas = new Canvas();
+    this.canvas = new Canvas(this.config);
+    this.crop_canvas = new Canvas(this.config);
   },
 
   _set_common_properties : function() {
-    this._get_aspect_ratio_from_config();
     this.canvas.set_width_and_height(this.config.width, this.aspect_ratio);
     this._set_image_ratio();
     this._set_letterbox_mixin();
@@ -126,18 +126,18 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
 
   _get_aspect_ratio_from_config : function() {
 
-    var aspect_ratio = this.config.aspect_ratio;
+  },
 
+  _set_aspect_ratio : function(aspect_ratio) {
     // require aspect ratio defined as a string
     if (typeof aspect_ratio !== "string") { return false; }
 
     // convert the string into width and height
     aspect_ratio = aspect_ratio.split(":");
 
-    this._set_aspect_ratio(parseInt(aspect_ratio[0], 10), parseInt(aspect_ratio[1], 10));
-  },
+    var width = parseInt(aspect_ratio[0], 10);
+    var height = parseInt(aspect_ratio[1], 10);
 
-  _set_aspect_ratio : function(width, height) {
     // reverse the aspect ratio if portrait
     this.aspect_ratio = (this.orientation === "landscape") ?
       calculate_aspect_ratio(width, height) :
@@ -278,6 +278,11 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
   coordiate_correction : function(image_dimension, top_left_offset, bottom_right_offset, origin_offset) {
 
     var difference = (image_dimension + origin_offset);
+    var canvas_dimension = bottom_right_offset - top_left_offset;
+
+    if (image_dimension < (bottom_right_offset - top_left_offset)) {
+      return ((canvas_dimension - image_dimension) / 2) - origin_offset;
+    }
 
     // too far down or right (snap back to TOP or LHS)
     if (difference > (image_dimension + top_left_offset)) {
@@ -301,62 +306,47 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
 
   _snap_to_bounds : function() {
 
+    var x = 0, y = 0;
+
     if(this.rotation_angle) {
       return false;
     }
 
-    // calculate the horzontal (x) and vertical (y) correction needed
-    // to snap the image back into place
-    var correction = {
-      x : this.coordiate_correction(
-        this.image_size.width,
-        this.crop_window[0],
-        this.crop_window[2],
-        this.origin.x
-      ),
-      y : this.coordiate_correction(
-        this.image_size.height,
-        this.crop_window[1],
-        this.crop_window[3],
-        this.origin.y
-      )
-    };
+    x = this.coordiate_correction(
+          this.image_size.width,
+          this.crop_window[0],
+          this.crop_window[2],
+          this.origin.x
+        );
+
+    y = this.coordiate_correction(
+          this.image_size.height,
+          this.crop_window[1],
+          this.crop_window[3],
+          this.origin.y
+        );
 
     // unless there is no need to perform a correction
-    if (correction.x === 0 && correction.y === 0) { return false; }
+    if (!x && !y) { return false; }
+
+    // calculate the horzontal (x) and vertical (y) correction needed
+    // to snap the image back into place
+    var correction = { x: x, y: y };
 
     // redraw the image in the correct position
     this.draw_to_canvas(correction);
+
     // set the translate origin to the new position
     this._update_translate_origin(correction);
 
     return true;
   },
 
-  _is_smaller_than_crop_window : function(image_size) {
-    // too short
-    if (image_size.height < (this.crop_window[3] - this.crop_window[1])) {
-      return true;
-    }
-    // too thin
-    if (image_size.width < (this.crop_window[2] - this.crop_window[0])) {
-      return true;
-    }
-    return false;
-  },
-
-  _modify_image_size : function(image_size) {
-    if (this._is_smaller_than_crop_window(image_size)) {
-      return false;
-    }
-    this.image_size = image_size;
-  },
-
   _perform_zoom : function() {
     var width  = this.cached_image_size.width + (this.zoom_amount * this.zoom_level),
         height = get_height_from_width(width, this.image_ratio);
 
-    this._modify_image_size({ width : width, height : height });
+    this.image_size = { width: width, height: height };
     this._snap_to_bounds() || this.draw_to_canvas();
   },
 
@@ -411,13 +401,19 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
   },
 
   handle_text_input: function(data) {
-    this.text = data || DEFAULT_TEXT;
+    this.text = data;
     this.draw_to_canvas();
   },
 
   handle_text_action: function(type, value) {
     this[type] = value;
     this.draw_to_canvas();
+  },
+
+  reset: function() {
+    this._set_common_properties();
+    this._perform_zoom();
+    this._snap_to_bounds() || this.draw_to_canvas();
   },
 
   actions : {
@@ -427,7 +423,7 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
     },
 
     zoomout : function() {
-      if (this.zoom_level <= 0) { return false; }
+      //if (this.zoom_level <= 0) { return false; }
       --this.zoom_level;
       this._perform_zoom();
     },
@@ -444,17 +440,27 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
         x : -(this.image_size.width/2),
         y : -(this.image_size.height/2)
       });
+      this.reset();
+    },
 
-      this._set_common_properties();
-      this._perform_zoom();
-      this._snap_to_bounds() || this.draw_to_canvas();
+    "16:9" : function() {
+      this._set_aspect_ratio("16:9");
+      this.reset();
+    },
+
+    "4:3" : function() {
+      this._set_aspect_ratio("4:3");
+      this.reset();
+    },
+
+    "1:1" : function() {
+      this._set_aspect_ratio("1:1");
+      this.reset();
     },
 
     orientation : function() {
       this._swap_orientation();
-      this._set_common_properties();
-      this._perform_zoom();
-      this._snap_to_bounds() || this.draw_to_canvas();
+      this.reset();
     },
   }
 

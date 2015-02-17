@@ -1,4 +1,5 @@
-var Canvas = function() {
+var Canvas = function(config) {
+  this._loadBackground(config.background);
   this._set_el();
   this._set_ctx();
 };
@@ -65,9 +66,25 @@ Canvas.prototype = {
     this.ctx.restore();
   },
 
+  _loadBackground: function(background) {
+
+    this.background = "rgba(255,255,255,1)";
+    if (!background) {return;}
+
+    var img = new Image();
+    var _this = this;
+
+    img.onload = function(){
+      // Create a pattern with this image, and set it to "repeat".
+      _this.background = _this.ctx.createPattern(img, 'repeat'); 
+    }
+
+    img.src = background;
+  },
+
   _fill_background : function() {
     this.redraw(function(ctx) {
-      ctx.fillStyle = "rgba(255,255,255,1)";
+      ctx.fillStyle = this.background;
       ctx.fillRect(0, 0, this.get_width(), this.get_height());
     }, this);
   },
@@ -110,7 +127,7 @@ Canvas.prototype = {
       var y = y_letterbox_offset;
 
 
-      ctx.font = fontSize + 'pt Reem';
+      ctx.font = fontSize + 'pt ITVMedium';
       ctx.fillStyle = "#fff";
       ctx.textBaseline = 'middle';
 

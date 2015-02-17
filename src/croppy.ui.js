@@ -1,4 +1,5 @@
-var UI = function() {
+var UI = function(config) {
+  this.config = config || {};
   this.createEl();
   this.render();
   this.delegateEvents();
@@ -14,14 +15,14 @@ UI.fn = _.extend(UI.prototype, Eventable, {
     this.$el.on("change", ".croppy-text__control", this.dispatch_text_button.bind(this));
   },
 
-  items : ["zoomin", "zoomout", "done", "rotate", "orientation", "text"],
+  items : ["zoomin", "zoomout", "done", "rotate", "orientation", "text", "16:9", "4:3", "1:1"],
 
   createEl : function() {
     this.$el = $('<div>', {"class": "croppy__ui"});
   },
 
   render : function() {
-    this.$el.html(JST["src/templates/button.jst"]());
+    this.$el.html(JST["src/templates/button.jst"](this.config.ui));
     return this;
   },
 
@@ -40,7 +41,6 @@ UI.fn = _.extend(UI.prototype, Eventable, {
     }
     if (action === "text") {
       this.toggle_text_ui();
-      this.dispatch_text();
     }
   },
 
@@ -51,6 +51,7 @@ UI.fn = _.extend(UI.prototype, Eventable, {
       text_ui.remove();
     } else {
       this.$el.append(JST["src/templates/text.jst"]({default_text: DEFAULT_TEXT}));
+      this.dispatch_text({target:{value:DEFAULT_TEXT}});
     }
   },
 

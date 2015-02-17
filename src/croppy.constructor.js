@@ -35,7 +35,7 @@ _.extend(Croppy.prototype, Eventable, {
   },
 
   _render : function(img, config) {
-    this.ui = new UI();
+    this.ui = new UI(config);
     this.canvas = new InterfaceCanvas(img, config);
     this.$el.append(this.ui.$el, this.canvas.canvas.$el);
     this._addListeners();

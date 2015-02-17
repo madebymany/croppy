@@ -6,9 +6,14 @@
   
   this["JST"]["src/templates/button.jst"] = function(obj) {
   obj || (obj = {});
-  var __t, __p = '', __e = _.escape;
+  var __t, __p = '', __e = _.escape, __j = Array.prototype.join;
+  function print() { __p += __j.call(arguments, '') }
   with (obj) {
-  __p += '<div class="croppy__actions">\n  <div class="croppy__zoom croppy__action">\n    <a class="croppy-icon croppy__zoomin js-croppy-btn" data-action="zoomin">zoomin</a>\n    <a class="croppy-icon croppy__zoomout js-croppy-btn" data-action="zoomout">zoomout</a>\n    <span class="croppy__action__label">Zoom</span>\n  </div>\n\n  <div class="croppy__rotate croppy__action">\n    <a class="croppy-icon croppy__rotate js-croppy-btn" data-action="rotate">rotate</a>\n    <span class="croppy__action__label">Rotate</span>\n  </div>\n\n  <div class="croppy__text croppy__action">\n    <a class="croppy-icon croppy__text js-croppy-btn" data-action="text">croppytext</a>\n    <span class="croppy__action__label">Text</span>\n  </div>\n\n  <div class="croppy__save croppy__action">\n    <a class="croppy-icon croppy__done js-croppy-btn" data-action="done">done</a>\n    <span class="croppy__action__label">Save</span>\n  </div>\n</div>\n';
+  __p += '<div class="croppy__actions">\n  <div class="croppy__zoom croppy__action">\n    <a class="croppy-icon croppy__zoomin js-croppy-btn" data-action="zoomin">zoomin</a>\n    <a class="croppy-icon croppy__zoomout js-croppy-btn" data-action="zoomout">zoomout</a>\n    <span class="croppy__action__label">Zoom</span>\n  </div>\n\n  <div class="croppy__rotate croppy__action">\n    <a class="croppy-icon croppy__rotate js-croppy-btn" data-action="rotate">rotate</a>\n    <span class="croppy__action__label">Rotate</span>\n  </div>\n\n  ';
+   if (typeof enable_aspect_ratio !== "undefined" && enable_aspect_ratio) { ;
+  __p += '\n  <div class="croppy__zoom croppy__action">\n    <a class="croppy-icon croppy__16-x-9 js-croppy-btn" data-action="16:9">16:9</a>\n    <a class="croppy-icon croppy__4-x-3 js-croppy-btn" data-action="4:3">4:3</a>\n    <a class="croppy-icon croppy__1-x-1 js-croppy-btn" data-action="1:1">1:1</a>\n    <span class="croppy__action__label">Image ratio</span>\n  </div>\n  ';
+   } ;
+  __p += '\n\n  <div class="croppy__text croppy__action">\n    <a class="croppy-icon croppy__text js-croppy-btn" data-action="text">croppytext</a>\n    <span class="croppy__action__label">Text</span>\n  </div>\n\n  <div class="croppy__save croppy__action">\n    <a class="croppy-icon croppy__done js-croppy-btn" data-action="done">done</a>\n    <span class="croppy__action__label">Save</span>\n  </div>\n</div>\n';
   
   }
   return __p
@@ -18,9 +23,9 @@
   obj || (obj = {});
   var __t, __p = '', __e = _.escape;
   with (obj) {
-  __p += '<div class="croppy-text">\n  <div class="croppy-text__left">\n    <label for="croppy_text_headline" class="croppy-text__label">Headline</label>\n    <textarea id="croppy_text_headline" class="js-croppy-headline">' +
+  __p += '<div class="croppy-text">\n  <div class="croppy-text__right">\n    <fieldset class="croppy-text__controls">\n      <legend class="croppy-text__label">Alignment</legend>\n        <input class="croppy-text__control" id="croppy_align_left" type="radio" checked name="alignment" value="left" />\n        <label for="croppy_align_left" class="croppy-text__btn">left</label>\n        <input class="croppy-text__control" id="croppy_align_center" type="radio" name="alignment" value="center" />\n        <label for="croppy_align_center" class="croppy-text__btn">center</label>\n        <input class="croppy-text__control" id="croppy_align_right" type="radio" name="alignment" value="right" />\n        <label for="croppy_align_right" class="croppy-text__btn">right</label>\n    </fieldset>\n    <fieldset class="croppy-text__controls">\n      <legend class="croppy-text__label">Distribution</legend>\n        <input class="croppy-text__control" id="croppy_dist_top" type="radio" name="distribution" value="top" />\n        <label for="croppy_dist_top" class="croppy-text__btn">top</label>\n        <input class="croppy-text__control" id="croppy_dist_middle" type="radio" name="distribution" value="middle" />\n        <label for="croppy_dist_middle" class="croppy-text__btn">middle</label>\n        <input class="croppy-text__control" id="croppy_dist_bottom" type="radio" checked name="distribution" value="bottom" />\n        <label for="croppy_dist_bottom" class="croppy-text__btn">bottom</label>\n    </fieldset>\n  </div>\n  <div class="croppy-text__left">\n    <label for="croppy_text_headline" class="croppy-text__label">Headline</label>\n    <textarea id="croppy_text_headline" class="js-croppy-headline">' +
   ((__t = ( default_text )) == null ? '' : __t) +
-  '</textarea>\n  </div>\n  <div class="croppy-text__right">\n    <fieldset class="croppy-text__controls">\n      <legend class="croppy-text__label">Alignment</legend>\n        <input class="croppy-text__control" id="croppy_align_left" type="radio" checked name="alignment" value="left" />\n        <label for="croppy_align_left" class="croppy-text__btn">left</label>\n        <input class="croppy-text__control" id="croppy_align_center" type="radio" name="alignment" value="center" />\n        <label for="croppy_align_center" class="croppy-text__btn">center</label>\n        <input class="croppy-text__control" id="croppy_align_right" type="radio" name="alignment" value="right" />\n        <label for="croppy_align_right" class="croppy-text__btn">right</label>\n    </fieldset>\n    <fieldset class="croppy-text__controls">\n      <legend class="croppy-text__label">Distribution</legend>\n        <input class="croppy-text__control" id="croppy_dist_top" type="radio" name="distribution" value="top" />\n        <label for="croppy_dist_top" class="croppy-text__btn">top</label>\n        <input class="croppy-text__control" id="croppy_dist_middle" type="radio" name="distribution" value="middle" />\n        <label for="croppy_dist_middle" class="croppy-text__btn">middle</label>\n        <input class="croppy-text__control" id="croppy_dist_bottom" type="radio" checked name="distribution" value="bottom" />\n        <label for="croppy_dist_bottom" class="croppy-text__btn">bottom</label>\n    </fieldset>\n  </div>\n </div>\n\n';
+  '</textarea>\n  </div>\n </div>\n\n';
   
   }
   return __p
@@ -79,7 +84,7 @@
     },
   
     _render : function(img, config) {
-      this.ui = new UI();
+      this.ui = new UI(config);
       this.canvas = new InterfaceCanvas(img, config);
       this.$el.append(this.ui.$el, this.canvas.canvas.$el);
       this._addListeners();
@@ -217,7 +222,8 @@
     }
   };
 
-  var Canvas = function() {
+  var Canvas = function(config) {
+    this._loadBackground(config.background);
     this._set_el();
     this._set_ctx();
   };
@@ -284,9 +290,25 @@
       this.ctx.restore();
     },
   
+    _loadBackground: function(background) {
+  
+      this.background = "rgba(255,255,255,1)";
+      if (!background) {return;}
+  
+      var img = new Image();
+      var _this = this;
+  
+      img.onload = function(){
+        // Create a pattern with this image, and set it to "repeat".
+        _this.background = _this.ctx.createPattern(img, 'repeat'); 
+      }
+  
+      img.src = background;
+    },
+  
     _fill_background : function() {
       this.redraw(function(ctx) {
-        ctx.fillStyle = "rgba(255,255,255,1)";
+        ctx.fillStyle = this.background;
         ctx.fillRect(0, 0, this.get_width(), this.get_height());
       }, this);
     },
@@ -329,7 +351,7 @@
         var y = y_letterbox_offset;
   
   
-        ctx.font = fontSize + 'pt Reem';
+        ctx.font = fontSize + 'pt ITVMedium';
         ctx.fillStyle = "#fff";
         ctx.textBaseline = 'middle';
   
@@ -418,6 +440,7 @@
   
     this._set_canvas();
   
+    this._set_aspect_ratio(this.config.aspect_ratio);
     this._set_common_properties();
   
     this._set_mouse_events("addEvent");
@@ -437,12 +460,11 @@
     },
   
     _set_canvas : function() {
-      this.canvas = new Canvas();
-      this.crop_canvas = new Canvas();
+      this.canvas = new Canvas(this.config);
+      this.crop_canvas = new Canvas(this.config);
     },
   
     _set_common_properties : function() {
-      this._get_aspect_ratio_from_config();
       this.canvas.set_width_and_height(this.config.width, this.aspect_ratio);
       this._set_image_ratio();
       this._set_letterbox_mixin();
@@ -532,18 +554,18 @@
   
     _get_aspect_ratio_from_config : function() {
   
-      var aspect_ratio = this.config.aspect_ratio;
+    },
   
+    _set_aspect_ratio : function(aspect_ratio) {
       // require aspect ratio defined as a string
       if (typeof aspect_ratio !== "string") { return false; }
   
       // convert the string into width and height
       aspect_ratio = aspect_ratio.split(":");
   
-      this._set_aspect_ratio(parseInt(aspect_ratio[0], 10), parseInt(aspect_ratio[1], 10));
-    },
+      var width = parseInt(aspect_ratio[0], 10);
+      var height = parseInt(aspect_ratio[1], 10);
   
-    _set_aspect_ratio : function(width, height) {
       // reverse the aspect ratio if portrait
       this.aspect_ratio = (this.orientation === "landscape") ?
         calculate_aspect_ratio(width, height) :
@@ -684,6 +706,11 @@
     coordiate_correction : function(image_dimension, top_left_offset, bottom_right_offset, origin_offset) {
   
       var difference = (image_dimension + origin_offset);
+      var canvas_dimension = bottom_right_offset - top_left_offset;
+  
+      if (image_dimension < (bottom_right_offset - top_left_offset)) {
+        return ((canvas_dimension - image_dimension) / 2) - origin_offset;
+      }
   
       // too far down or right (snap back to TOP or LHS)
       if (difference > (image_dimension + top_left_offset)) {
@@ -707,62 +734,47 @@
   
     _snap_to_bounds : function() {
   
+      var x = 0, y = 0;
+  
       if(this.rotation_angle) {
         return false;
       }
   
-      // calculate the horzontal (x) and vertical (y) correction needed
-      // to snap the image back into place
-      var correction = {
-        x : this.coordiate_correction(
-          this.image_size.width,
-          this.crop_window[0],
-          this.crop_window[2],
-          this.origin.x
-        ),
-        y : this.coordiate_correction(
-          this.image_size.height,
-          this.crop_window[1],
-          this.crop_window[3],
-          this.origin.y
-        )
-      };
+      x = this.coordiate_correction(
+            this.image_size.width,
+            this.crop_window[0],
+            this.crop_window[2],
+            this.origin.x
+          );
+  
+      y = this.coordiate_correction(
+            this.image_size.height,
+            this.crop_window[1],
+            this.crop_window[3],
+            this.origin.y
+          );
   
       // unless there is no need to perform a correction
-      if (correction.x === 0 && correction.y === 0) { return false; }
+      if (!x && !y) { return false; }
+  
+      // calculate the horzontal (x) and vertical (y) correction needed
+      // to snap the image back into place
+      var correction = { x: x, y: y };
   
       // redraw the image in the correct position
       this.draw_to_canvas(correction);
+  
       // set the translate origin to the new position
       this._update_translate_origin(correction);
   
       return true;
     },
   
-    _is_smaller_than_crop_window : function(image_size) {
-      // too short
-      if (image_size.height < (this.crop_window[3] - this.crop_window[1])) {
-        return true;
-      }
-      // too thin
-      if (image_size.width < (this.crop_window[2] - this.crop_window[0])) {
-        return true;
-      }
-      return false;
-    },
-  
-    _modify_image_size : function(image_size) {
-      if (this._is_smaller_than_crop_window(image_size)) {
-        return false;
-      }
-      this.image_size = image_size;
-    },
-  
     _perform_zoom : function() {
       var width  = this.cached_image_size.width + (this.zoom_amount * this.zoom_level),
           height = get_height_from_width(width, this.image_ratio);
   
-      this._modify_image_size({ width : width, height : height });
+      this.image_size = { width: width, height: height };
       this._snap_to_bounds() || this.draw_to_canvas();
     },
   
@@ -817,13 +829,19 @@
     },
   
     handle_text_input: function(data) {
-      this.text = data || DEFAULT_TEXT;
+      this.text = data;
       this.draw_to_canvas();
     },
   
     handle_text_action: function(type, value) {
       this[type] = value;
       this.draw_to_canvas();
+    },
+  
+    reset: function() {
+      this._set_common_properties();
+      this._perform_zoom();
+      this._snap_to_bounds() || this.draw_to_canvas();
     },
   
     actions : {
@@ -833,7 +851,7 @@
       },
   
       zoomout : function() {
-        if (this.zoom_level <= 0) { return false; }
+        //if (this.zoom_level <= 0) { return false; }
         --this.zoom_level;
         this._perform_zoom();
       },
@@ -850,23 +868,34 @@
           x : -(this.image_size.width/2),
           y : -(this.image_size.height/2)
         });
+        this.reset();
+      },
   
-        this._set_common_properties();
-        this._perform_zoom();
-        this._snap_to_bounds() || this.draw_to_canvas();
+      "16:9" : function() {
+        this._set_aspect_ratio("16:9");
+        this.reset();
+      },
+  
+      "4:3" : function() {
+        this._set_aspect_ratio("4:3");
+        this.reset();
+      },
+  
+      "1:1" : function() {
+        this._set_aspect_ratio("1:1");
+        this.reset();
       },
   
       orientation : function() {
         this._swap_orientation();
-        this._set_common_properties();
-        this._perform_zoom();
-        this._snap_to_bounds() || this.draw_to_canvas();
+        this.reset();
       },
     }
   
   });
 
-  var UI = function() {
+  var UI = function(config) {
+    this.config = config || {};
     this.createEl();
     this.render();
     this.delegateEvents();
@@ -882,14 +911,14 @@
       this.$el.on("change", ".croppy-text__control", this.dispatch_text_button.bind(this));
     },
   
-    items : ["zoomin", "zoomout", "done", "rotate", "orientation", "text"],
+    items : ["zoomin", "zoomout", "done", "rotate", "orientation", "text", "16:9", "4:3", "1:1"],
   
     createEl : function() {
       this.$el = $('<div>', {"class": "croppy__ui"});
     },
   
     render : function() {
-      this.$el.html(JST["src/templates/button.jst"]());
+      this.$el.html(JST["src/templates/button.jst"](this.config.ui));
       return this;
     },
   
@@ -908,7 +937,6 @@
       }
       if (action === "text") {
         this.toggle_text_ui();
-        this.dispatch_text();
       }
     },
   
@@ -919,6 +947,7 @@
         text_ui.remove();
       } else {
         this.$el.append(JST["src/templates/text.jst"]({default_text: DEFAULT_TEXT}));
+        this.dispatch_text({target:{value:DEFAULT_TEXT}});
       }
     },
   

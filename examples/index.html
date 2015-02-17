@@ -69,7 +69,11 @@
       var c = new Croppy("#preview", {
         max_letterbox_height: 20,
         aspect_ratio : "16:9",
-        orientation : "landscape"
+        orientation : "landscape",
+        background: "assets/grey-background-7d68d57f56247ae92af0782c9b67f736.jpg",
+        ui: {
+          enable_aspect_ratio: true
+        }
       });
       c.readFromFile(e.dataTransfer.files);
       c.on("cropped", function(data){
@@ -77,6 +81,7 @@
         img.src = data;
         document.body.appendChild(img);
       });
+      window.c = c;
     }
 
     // Setup the dnd listeners.

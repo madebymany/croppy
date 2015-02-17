@@ -91,6 +91,6 @@ module.exports = function(grunt) {
   // Default task.
   grunt.registerTask('default', ['jst', 'rig']);
   grunt.registerTask('test', ['jasmine']);
-  grunt.registerTask('build', ['default', 'uglify', 'test']);
+  grunt.registerTask('build', ['default', 'uglify']);
 
 };
