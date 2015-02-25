@@ -91,8 +91,9 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
       return;
     }
 
-    // _.extend(this, letterbox.none);
     this.letterbox = letterbox.none;
+    this._init_letterbox(0, 0);
+
   },
 
   _set_cached_image_size : function() {
@@ -199,24 +200,16 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
   // this is the letterbox that appears at the top and bottom
   // of the image in the editor. Needs to be redrawn every time
   // the canvas is redrawn
-  _draw_letter_box : function() {
 
-    // if the letterbox_coordinates don't exist redefine this function as a noop
+  _draw_letter_box : function() {
     if (!this.letterbox_coordinates) {
-      this._draw_letter_box = function(){};
       return;
     }
-
-    // otherwise redefine the function
-    this._draw_letter_box = function() {
-      this.canvas.redraw(function(ctx) {
-        ctx.fillStyle = "rgba(0,0,0,0.8)";
-        ctx.fillRect.apply(ctx, this.letterbox_coordinates[0]);
-        ctx.fillRect.apply(ctx, this.letterbox_coordinates[1]);
-      }, this);
-    };
-
-    this._draw_letter_box();
+    this.canvas.redraw(function(ctx) {
+      ctx.fillStyle = "rgba(0,0,0,0.8)";
+      ctx.fillRect.apply(ctx, this.letterbox_coordinates[0]);
+      ctx.fillRect.apply(ctx, this.letterbox_coordinates[1]);
+    }, this);
   },
 
   get_mouse_position : function(e) {
@@ -275,10 +268,12 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
     this._snap_to_bounds();
   },
 
-  coordiate_correction : function(image_dimension, top_left_offset, bottom_right_offset, origin_offset) {
+  coordiate_correction : function(dimension, top_left_offset, bottom_right_offset, origin_offset) {
+
+    var image_dimension = this.image_size[dimension];
+    var canvas_dimension = this.canvas[dimension];
 
     var difference = (image_dimension + origin_offset);
-    var canvas_dimension = bottom_right_offset - top_left_offset;
 
     if (image_dimension < (bottom_right_offset - top_left_offset)) {
       return ((canvas_dimension - image_dimension) / 2) - origin_offset;
@@ -313,14 +308,14 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
     }
 
     x = this.coordiate_correction(
-          this.image_size.width,
+          "width",
           this.crop_window[0],
           this.crop_window[2],
           this.origin.x
         );
 
     y = this.coordiate_correction(
-          this.image_size.height,
+          "height",
           this.crop_window[1],
           this.crop_window[3],
           this.origin.y
@@ -378,8 +373,14 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
   },
 
   crop : function() {
-    var crop_scale = _.partial(scale, this.img.width / this.image_size.width);
-    var canvas = new Canvas();
+    var min_width = this.config.min_width || this.canvas.width;
+
+    var crop_size = this.img.width >= min_width ? this.img : {
+      width: min_width,
+      height: get_height_from_width(min_width, this.image_ratio)
+    };
+
+    var crop_scale = _.partial(scale, crop_size.width / this.image_size.width);
     var crop_window = _.map(this.crop_window, crop_scale, this);
 
     var position = {
@@ -387,17 +388,17 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
       y : crop_scale(this.origin.y) - crop_window[1]
     };
 
-    canvas.set_width(crop_window[2] - crop_window[0]);
-    canvas.set_height(crop_window[3] - crop_window[1]);
+    this.crop_canvas.set_width(crop_window[2] - crop_window[0]);
+    this.crop_canvas.set_height(crop_window[3] - crop_window[1]);
 
-    canvas[this.rotation_angle ? "rotate_and_draw" : "draw"](
-        this._get_transformed_coords(position), this.img, this.img, this.rotation_angle);
+    this.crop_canvas[this.rotation_angle ? "rotate_and_draw" : "draw"](
+        this._get_transformed_coords(position), this.img, crop_size, this.rotation_angle);
 
     if (this.text) {
-      canvas.render_text(this.text, this.distribution, this.alignment, null, crop_scale);
+      this.crop_canvas.render_text(this.text, this.distribution, this.alignment, null, crop_scale);
     }
 
-    return canvas.el.toDataURL("image/jpeg");
+    return this.crop_canvas.el.toDataURL("image/jpeg");
   },
 
   handle_text_input: function(data) {

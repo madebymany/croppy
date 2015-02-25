@@ -78,6 +78,12 @@ var letterbox = {
       ];
     },
 
-    _set_image_size : function() {}
+    _reset_canvas_height_with_letterbox : function() {},
+
+    _set_image_size : function() {},
+
+    _set_letterbox_coordinates : function() {
+      this.letterbox_coordinates = undefined;
+    }
   }
 };

@@ -1,4 +1,5 @@
 var Canvas = function(config) {
+  this.font_family = config.font_family || "Arial";
   this._loadBackground(config.background);
   this._set_el();
   this._set_ctx();
@@ -72,6 +73,7 @@ Canvas.prototype = {
     if (!background) {return;}
 
     var img = new Image();
+    img.crossOrigin = "use-credentials"
     var _this = this;
 
     img.onload = function(){
@@ -99,7 +101,7 @@ Canvas.prototype = {
 
   render_overlay: function() {
     this.redraw(function(ctx) {
-      ctx.globalAlpha = 0.3;
+      ctx.globalAlpha = 0.2;
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, this.get_width(), this.get_height());
       ctx.globalAlpha = 1;
@@ -127,7 +129,7 @@ Canvas.prototype = {
       var y = y_letterbox_offset;
 
 
-      ctx.font = fontSize + 'pt ITVMedium';
+      ctx.font = fontSize + 'pt ' + this.font_family;
       ctx.fillStyle = "#fff";
       ctx.textBaseline = 'middle';
 
