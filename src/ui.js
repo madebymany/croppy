@@ -1,19 +1,32 @@
+var EventEmitter = require('events');
+var inherits = require('util').inherits;
+
+var buttonTemplate = require('./templates/button.jst');
+var textTemplate = require('./templates/text.jst');
+
 var UI = function(config) {
-  this.config = config || {};
+  EventEmitter.call(this);
+
+  this.config = Object.assign(config, {default_text: "Some text…"});
   this.createEl();
   this.render();
   this.delegateEvents();
 };
 
-UI.fn = Object.assign(UI.prototype, Eventable, {
+module.exports = UI
+
+inherits(UI, EventEmitter);
+
+Object.assign(UI.prototype, {
 
   is_enabled : true,
 
   delegateEvents: function() {
 
-    this.undeleateEvents();
+    this.undelegateEvents();
 
     var callIfMatches = function (selector, f, e) {
+      e = e.target;
       var matches = function(el, selector) {
         return (el.matches || el.matchesSelector || el.msMatchesSelector || el.mozMatchesSelector || el.webkitMatchesSelector || el.oMatchesSelector).call(el, selector);
       };
@@ -31,9 +44,9 @@ UI.fn = Object.assign(UI.prototype, Eventable, {
           this.dispatch_text_button.bind(this))
     }
 
-    evs.keys.forEach(function(type) {
-      this.$el.addEventListener(type, evs[type]);
-    });
+    Object.keys(evs).forEach(function(type) {
+      this.el.addEventListener(type, evs[type]);
+    }, this);
 
     this.delegatedEvents = evs;
   },
@@ -41,27 +54,27 @@ UI.fn = Object.assign(UI.prototype, Eventable, {
   items : ["zoomin", "zoomout", "done", "rotate", "orientation", "text", "16:9", "4:3", "1:1"],
 
   createEl : function() {
-    this.$el = document.createElement('div');
-    this.$el.class = 'croppy__ui'
+    this.el = document.createElement('div');
+    this.el.class = 'croppy__ui'
   },
 
   render : function() {
-    this.$el.innerHTML = JST["src/templates/button.jst"](this.config.ui);
+    this.el.innerHTML = buttonTemplate(this.config.ui);
     return this;
   },
 
   dispatch_text: function(e) {
-    this.trigger("ui:text:input", e && e.target.value);
+    this.emit("ui:text:input", e && e.value);
   },
 
   dispatch_text_button: function(e) {
-    this.trigger("ui:text:action", e.target.name, e.target.value);
+    this.emit("ui:text:action", e.name, e.value);
   },
 
   dispatch_event : function(e) {
-    var action = e.target.dataset.action;
+    var action = e.dataset.action;
     if (this.is_enabled) {
-      this.trigger("ui:" + action);
+      this.emit("ui:" + action);
     }
     if (action === "text") {
       this.toggle_text_ui();
@@ -69,14 +82,14 @@ UI.fn = Object.assign(UI.prototype, Eventable, {
   },
 
   toggle_text_ui: function() {
-    var text_ui = this.$el.querySelector(".croppy-text");
+    var text_ui = this.el.querySelector(".croppy-text");
     if (text_ui !== null) {
       this.dispatch_text();
       text_ui.parentNode.removeChild(text_ui);
     } else {
-      this.$el.insertAdjacentHTML('beforeend',
-          JST["src/templates/text.jst"]({default_text: DEFAULT_TEXT}));
-      this.dispatch_text({target:{value:DEFAULT_TEXT}});
+      this.el.insertAdjacentHTML('beforeend',
+          textTemplate({default_text: this.config.default_text}));
+      this.dispatch_text({target: {value: this.config.default_text}});
     }
   },
 
@@ -86,12 +99,12 @@ UI.fn = Object.assign(UI.prototype, Eventable, {
     }
 
     this.delegatedEvents.forEach(function(ev) {
-      this.$el.removeEventListener(ev.type, ev.listener);
+      this.el.removeEventListener(ev.type, ev.listener);
     });
   },
 
   remove : function() {
     this.undelegateEvents();
-    this.$el.parentNode.removeChild(this.$el);
+    this.el.parentNode.removeChild(this.el);
   }
 });

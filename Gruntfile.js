@@ -1,12 +1,11 @@
 /*global module:false*/
 module.exports = function(grunt) {
 
-  grunt.loadNpmTasks('grunt-rigger');
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-jasmine');
-  grunt.loadNpmTasks('grunt-contrib-jst');
+  grunt.loadNpmTasks('grunt-browserify');
 
   grunt.initConfig({
 
@@ -25,18 +24,25 @@ module.exports = function(grunt) {
       }
     },
 
-    jst: {
-      compile: {
-        files: {
-          "src/croppy.templates.js": ["src/templates/*"]
+    browserify: {
+      debug: {
+        src: [],
+        dest: 'dist/croppy.debug.js',
+        options: {
+          browserifyOptions: {
+            debug: true
+          }
         }
-      }
-    },
+      },
 
-    rig: {
-      build: {
-        src: ['<banner:meta.banner>', 'src/croppy.js'],
+      dist: {
+        src: [],
         dest: 'dist/croppy.js'
+      },
+
+      options: {
+        transform: [['jstify', {engine: 'lodash-micro'}]],
+        require: ['.:croppy']
       }
     },
 
@@ -53,8 +59,8 @@ module.exports = function(grunt) {
 
     watch: {
       scripts: {
-        files: ['src/*.js', 'src/templates/*.jst'],
-        tasks: ['jst', 'rig']
+        files: ['index.js', 'src/**/*.js', 'src/**/*.jst'],
+        tasks: ['default']
       }
     },
 
@@ -89,8 +95,8 @@ module.exports = function(grunt) {
   });
 
   // Default task.
-  grunt.registerTask('default', ['jst', 'rig']);
-  grunt.registerTask('test', ['jasmine']);
-  grunt.registerTask('build', ['default', 'uglify']);
+  grunt.registerTask('default', ['browserify:debug']);
+  grunt.registerTask('test', ['default', 'jasmine']);
+  grunt.registerTask('build', ['browserify', 'uglify']);
 
 };

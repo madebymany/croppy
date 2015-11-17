@@ -1,8 +1,15 @@
+var EventEmitter = require('events');
+var inherits = require('util').inherits;
+var ListenToEmitter = require('listento-emitter');
+
+var Canvas = require('./canvas.js');
+var utils = require('./utils.js');
+var letterbox = require('./letterbox_mixins.js')
+
 var InterfaceCanvas = function(img, config) {
+  EventEmitter.call(this);
 
   this.config = Object.assign(this.config, config);
-
-  window.croppy = this;
 
   this.zoom_level = 0;
   this.rotation_angle = 0;
@@ -17,12 +24,13 @@ var InterfaceCanvas = function(img, config) {
 
   this._set_mouse_events("addEvent");
   this.draw_to_canvas(this.origin);
-
-  this.on();
-
 };
 
-Object.assign(InterfaceCanvas.prototype, Eventable, {
+module.exports = InterfaceCanvas
+
+inherits(InterfaceCanvas, EventEmitter);
+
+Object.assign(InterfaceCanvas.prototype, ListenToEmitter, {
 
   zoom_amount : 10,
 
@@ -48,7 +56,8 @@ Object.assign(InterfaceCanvas.prototype, Eventable, {
 
   _set_orientation_from_config : function() {
 
-    var has_orientation = _.contains(["landscape", "portrait"], this.config.orientation);
+    var has_orientation = ["landscape", "portrait"].includes(
+        this.config.orientation);
 
     if (has_orientation) {
       this.orientation = this.config.orientation;
@@ -101,13 +110,14 @@ Object.assign(InterfaceCanvas.prototype, Eventable, {
   },
 
   _set_image_ratio : function() {
-    this.image_ratio = calculate_aspect_ratio(this.img.width, this.img.height);
+    this.image_ratio = utils.calculate_aspect_ratio(this.img.width,
+        this.img.height);
   },
 
   _set_raw_image_size : function() {
     this.image_size = {
-      height : get_height_from_width(this.canvas.get_width(), this.image_ratio),
-      width  : get_width_from_height(this.canvas.get_height(), this.image_ratio)
+      height : utils.get_height_from_width(this.canvas.get_width(), this.image_ratio),
+      width  : utils.get_width_from_height(this.canvas.get_height(), this.image_ratio)
     };
   },
 
@@ -141,8 +151,8 @@ Object.assign(InterfaceCanvas.prototype, Eventable, {
 
     // reverse the aspect ratio if portrait
     this.aspect_ratio = (this.orientation === "landscape") ?
-      calculate_aspect_ratio(width, height) :
-      calculate_aspect_ratio(height, width);
+      utils.calculate_aspect_ratio(width, height) :
+      utils.calculate_aspect_ratio(height, width);
   },
 
   // is the user panning (moving the image)
@@ -339,7 +349,7 @@ Object.assign(InterfaceCanvas.prototype, Eventable, {
 
   _perform_zoom : function() {
     var width  = this.cached_image_size.width + (this.zoom_amount * this.zoom_level),
-        height = get_height_from_width(width, this.image_ratio);
+        height = utils.get_height_from_width(width, this.image_ratio);
 
     this.image_size = { width: width, height: height };
     this._snap_to_bounds() || this.draw_to_canvas();
@@ -377,10 +387,10 @@ Object.assign(InterfaceCanvas.prototype, Eventable, {
 
     var crop_size = this.img.width >= min_width ? this.img : {
       width: min_width,
-      height: get_height_from_width(min_width, this.image_ratio)
+      height: utils.get_height_from_width(min_width, this.image_ratio)
     };
 
-    var crop_scale = scale.bind(undefined,
+    var crop_scale = utils.scale.bind(undefined,
         crop_size.width / this.image_size.width);
     var crop_window = this.crop_window.map(crop_scale, this);
 
@@ -433,7 +443,7 @@ Object.assign(InterfaceCanvas.prototype, Eventable, {
     done : function() {
       var image = document.createElement("img");
       image.src = this.crop();
-      this.trigger("cropped", this.crop());
+      this.emit("cropped", this.crop());
     },
 
     rotate : function() {

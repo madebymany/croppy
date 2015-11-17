@@ -35,11 +35,9 @@
   <footer>
   </footer>
 
-  <script src="../components/underscore/underscore.js"></script>
-  <script src="../components/jquery/dist/jquery.js"></script>
-  <script src="../components/Eventable/eventable.js"></script>
-  <script src="../dist/croppy.js"></script>
+  <script src="../dist/croppy.debug.js"></script>
   <script>
+    var Croppy = require('croppy');
     var dropZone = document.getElementById('dropzone');
 
     function handleDragEnter(e) {

@@ -1,11 +1,23 @@
+var EventEmitter = require('events');
+var inherits = require('util').inherits;
+var ListenToEmitter = require('listento-emitter');
+
+var utils = require('./utils.js');
+
 var Canvas = function(config) {
+  EventEmitter.call(this);
+
   this.font_family = config.font_family || "Arial";
   this._loadBackground(config.background);
   this._set_el();
   this._set_ctx();
 };
 
-Canvas.prototype = {
+module.exports = Canvas;
+
+inherits(Canvas, EventEmitter);
+
+Object.assign(Canvas.prototype, ListenToEmitter, {
 
   _set_el : function() {
     this.el = document.createElement('canvas');
@@ -21,7 +33,7 @@ Canvas.prototype = {
 
   set_width_and_height : function(width, aspect_ratio) {
     this.set_width(width),
-    this.set_height(get_height_from_width(width, aspect_ratio));
+    this.set_height(utils.get_height_from_width(width, aspect_ratio));
   },
 
   draw : function(position, img, image_size) {
@@ -201,4 +213,4 @@ Canvas.prototype = {
       ctx.shadowColor = 'transparent';
     }, this);
   }
-};
+});

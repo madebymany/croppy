@@ -1,4 +1,6 @@
-var letterbox = {
+var utils = require('./utils.js');
+
+module.exports = {
   horizontal : {
 
     _reset_canvas_height_with_letterbox : function() {
@@ -37,7 +39,7 @@ var letterbox = {
 
     _reset_canvas_height_with_letterbox : function() {
       this.canvas.set_height(
-        get_height_from_width(
+        utils.get_height_from_width(
           this.canvas.get_width() - this.max_mask_size, this.aspect_ratio
         )
       );
@@ -45,7 +47,7 @@ var letterbox = {
 
     _set_image_size : function() {
       this.image_size = {
-        width : get_width_from_height(this.canvas.get_height(), this.image_ratio),
+        width : utils.get_width_from_height(this.canvas.get_height(), this.image_ratio),
         height : this.canvas.get_height()
       };
     },
