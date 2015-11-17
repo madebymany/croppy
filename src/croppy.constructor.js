@@ -8,7 +8,7 @@ var Croppy = function(element, config) {
   this._set_el(element);
 
   // override defaults
-  this.config = Object.assign({width : this.$el.width()}, config);
+  this.config = Object.assign({width : this.$el.clientWidth}, config);
 
 };
 
@@ -37,7 +37,8 @@ Object.assign(Croppy.prototype, Eventable, {
   _render : function(img, config) {
     this.ui = new UI(config);
     this.canvas = new InterfaceCanvas(img, config);
-    this.$el.append(this.ui.$el, this.canvas.canvas.$el);
+    this.$el.appendChild(this.ui.$el);
+    this.$el.appendChild(this.canvas.canvas.$el);
     this._addListeners();
   },
 
@@ -70,7 +71,7 @@ Object.assign(Croppy.prototype, Eventable, {
     if (!element) {
       throw "Parent dom container is not defined";
     }
-    this.$el = (element instanceof $) ? element : $(element);
+    this.$el = element;
   },
 
   handle_cropped : function(data) {
@@ -79,8 +80,9 @@ Object.assign(Croppy.prototype, Eventable, {
   },
 
   detach : function() {
-    this.canvas.canvas.$el.detach();
-    this.ui.$el.detach();
+    [this.canvas.canvas.$el, this.ui.$el].forEach(function (e) {
+      e.parentNode.removeChild(e);
+    });
   },
 
   set_ui_enabled : function(boolean) {

@@ -8,8 +8,7 @@ var Canvas = function(config) {
 Canvas.prototype = {
 
   _set_el : function() {
-    this.$el = $("<canvas>");
-    this.el  = this.$el[0];
+    this.el = document.createElement('canvas');
   },
 
   translate : function(coordinate) {

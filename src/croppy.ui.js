@@ -10,19 +10,43 @@ UI.fn = Object.assign(UI.prototype, Eventable, {
   is_enabled : true,
 
   delegateEvents: function() {
-    this.$el.on("click", ".js-croppy-btn", this.dispatch_event.bind(this));
-    this.$el.on("keyup", ".js-croppy-headline", this.dispatch_text.bind(this));
-    this.$el.on("change", ".croppy-text__control", this.dispatch_text_button.bind(this));
+
+    this.undeleateEvents();
+
+    var callIfMatches = function (selector, f, e) {
+      var matches = function(el, selector) {
+        return (el.matches || el.matchesSelector || el.msMatchesSelector || el.mozMatchesSelector || el.webkitMatchesSelector || el.oMatchesSelector).call(el, selector);
+      };
+      if (matches(e, selector)) {
+        return f(e);
+      }
+    }
+
+    var evs = {
+      click: callIfMatches.bind(undefined, ".js-croppy-btn",
+          this.dispatch_event.bind(this)),
+      keyup: callIfMatches.bind(undefined, ".js-croppy-headline",
+          this.dispatch_text.bind(this)),
+      change: callIfMatches.bind(undefined, ".croppy-text__control",
+          this.dispatch_text_button.bind(this))
+    }
+
+    evs.keys.forEach(function(type) {
+      this.$el.addEventListener(type, evs[type]);
+    });
+
+    this.delegatedEvents = evs;
   },
 
   items : ["zoomin", "zoomout", "done", "rotate", "orientation", "text", "16:9", "4:3", "1:1"],
 
   createEl : function() {
-    this.$el = $('<div>', {"class": "croppy__ui"});
+    this.$el = document.createElement('div');
+    this.$el.class = 'croppy__ui'
   },
 
   render : function() {
-    this.$el.html(JST["src/templates/button.jst"](this.config.ui));
+    this.$el.innerHTML = JST["src/templates/button.jst"](this.config.ui);
     return this;
   },
 
@@ -45,17 +69,29 @@ UI.fn = Object.assign(UI.prototype, Eventable, {
   },
 
   toggle_text_ui: function() {
-    var text_ui = this.$el.find(".croppy-text");
-    if (text_ui.length) {
+    var text_ui = this.$el.querySelector(".croppy-text");
+    if (text_ui !== null) {
       this.dispatch_text();
-      text_ui.remove();
+      text_ui.parentNode.removeChild(text_ui);
     } else {
-      this.$el.append(JST["src/templates/text.jst"]({default_text: DEFAULT_TEXT}));
+      this.$el.insertAdjacentHTML('beforeend',
+          JST["src/templates/text.jst"]({default_text: DEFAULT_TEXT}));
       this.dispatch_text({target:{value:DEFAULT_TEXT}});
     }
   },
 
+  undelegateEvents : function() {
+    if (typeof this.delegatedEvents === 'undefined') {
+      return;
+    }
+
+    this.delegatedEvents.forEach(function(ev) {
+      this.$el.removeEventListener(ev.type, ev.listener);
+    });
+  },
+
   remove : function() {
-    this.$el.undelegate().remove();
+    this.undelegateEvents();
+    this.$el.parentNode.removeChild(this.$el);
   }
 });
