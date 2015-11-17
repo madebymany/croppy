@@ -5,7 +5,7 @@ var UI = function(config) {
   this.delegateEvents();
 };
 
-UI.fn = _.extend(UI.prototype, Eventable, {
+UI.fn = Object.assign(UI.prototype, Eventable, {
 
   is_enabled : true,
 

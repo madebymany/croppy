@@ -8,11 +8,11 @@ var Croppy = function(element, config) {
   this._set_el(element);
 
   // override defaults
-  this.config = _.extend({width : this.$el.width()}, config);
+  this.config = Object.assign({width : this.$el.width()}, config);
 
 };
 
-_.extend(Croppy.prototype, Eventable, {
+Object.assign(Croppy.prototype, Eventable, {
 
   readFromUrl : function(url) {
     this._loadImage(url, true);
@@ -43,7 +43,7 @@ _.extend(Croppy.prototype, Eventable, {
 
   _addListeners : function() {
     this.listenTo(this.canvas, "cropped", this.handle_cropped);
-    _.forEach(this.ui.items, function(action){
+    this.ui.items.forEach(function(action){
       this.canvas.listenTo(this.ui, "ui:" +  action, this.canvas.actions[action]);
     }, this);
     this.canvas.listenTo(this.ui, "ui:text:input", this.canvas.handle_text_input);

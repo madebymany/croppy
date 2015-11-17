@@ -1,6 +1,6 @@
 var InterfaceCanvas = function(img, config) {
 
-  this.config = _.extend(this.config, config);
+  this.config = Object.assign(this.config, config);
 
   window.croppy = this;
 
@@ -22,7 +22,7 @@ var InterfaceCanvas = function(img, config) {
 
 };
 
-_.extend(InterfaceCanvas.prototype, Eventable, {
+Object.assign(InterfaceCanvas.prototype, Eventable, {
 
   zoom_amount : 10,
 
@@ -78,14 +78,14 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
     this._set_raw_image_size();
 
     if (this.image_size.width < this.canvas.get_width()) {
-      // _.extend(this, letterbox.horizontal);
+      // Object.assign(this, letterbox.horizontal);
       this.letterbox = letterbox.horizontal;
       this._init_letterbox(this.image_size.height, this.canvas.get_height());
       return;
     }
 
     if (this.image_size.height < this.canvas.get_height()) {
-      // _.extend(this, letterbox.vertical);
+      // Object.assign(this, letterbox.vertical);
       this.letterbox = letterbox.vertical;
       this._init_letterbox(this.image_size.width, this.canvas.get_width());
       return;
@@ -380,8 +380,9 @@ _.extend(InterfaceCanvas.prototype, Eventable, {
       height: get_height_from_width(min_width, this.image_ratio)
     };
 
-    var crop_scale = _.partial(scale, crop_size.width / this.image_size.width);
-    var crop_window = _.map(this.crop_window, crop_scale, this);
+    var crop_scale = scale.bind(undefined,
+        crop_size.width / this.image_size.width);
+    var crop_window = this.crop_window.map(crop_scale, this);
 
     var position = {
       x : crop_scale(this.origin.x) - crop_window[0],
