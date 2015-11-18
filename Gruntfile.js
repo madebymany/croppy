@@ -41,7 +41,6 @@ module.exports = function(grunt) {
       },
 
       options: {
-        transform: [['jstify', {engine: 'lodash-micro'}]],
         require: ['.:croppy']
       }
     },
