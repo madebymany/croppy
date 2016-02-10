@@ -7,7 +7,7 @@ System.config({
     "optional": [
       "runtime",
       "optimisation.modules.system"
-    ],
+    ]
   },
   paths: {
     "npm:*": "jspm_packages/npm/*",

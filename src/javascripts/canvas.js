@@ -6,8 +6,8 @@ export default class CanvasState {
       return new Handle(i);
     });
     this.dragging = false;
-    this.dragoffx = 0;
-    this.dragoffy = 0;
+    this.dragoff = {x:0,y:0};
+    this.mousepos = {x:0,y:0};
     this.selection = null;
     this.coords = [0, 0, width, height];
     this.context = canvas.getContext("2d");
@@ -32,8 +32,10 @@ export default class CanvasState {
 
     let selected = this.handles.some(handle => {
       if (!handle.contains(mx, my)) { return false; }
-      this.dragoffx = mx - handle.x;
-      this.dragoffy = my - handle.y;
+      this.dragoff = {
+        x: mx - handle.x,
+        y: my - handle.y
+      };
       this.dragging = true;
       this.selection = handle;
       return true;
@@ -44,20 +46,13 @@ export default class CanvasState {
       return;
     }
 
-    requestAnimationFrame(update);
+    this.mousepos = {x: mx, y: my};
+    requestAnimationFrame(this.update);
   }
 
   mouseMove = (e) => {
     if (!this.dragging) { return; }
-
-    requestAnimationFrame(update);
-
-    let mx = e.layerX,
-        my = e.layerY;
-
-    // We don't want to drag the object by its top-left corner, we want to drag it
-    // from where we clicked. Thats why we saved the offset and use it here
-    this.selection.setCoords(mx - this.dragoffx, my - this.dragoffy);
+    this.mousepos = {x: e.layerX, y: e.layerY};
   }
 
   mouseUp = () => {
@@ -74,6 +69,18 @@ export default class CanvasState {
       image.height
     );
     this.context.globalCompositeOperation = 'source-over';
+  }
+
+  update = () => {
+    if (!this.dragging) { return; }
+    requestAnimationFrame(this.update);
+
+    // We don't want to drag the object by its top-left corner, we want to drag it
+    // from where we clicked. Thats why we saved the offset and use it here
+    this.selection.setCoords(
+      this.mousepos.x - this.dragoff.x,
+      this.mousepos.y - this.dragoff.y
+    );
   }
 
   renderHandles() {
