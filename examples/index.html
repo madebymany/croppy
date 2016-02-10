@@ -1,98 +1,67 @@
 <!doctype html>
-<!--[if lt IE 7]> <html class="no-js ie6" lang="en"> <![endif]-->
-<!--[if IE 7]>    <html class="no-js ie7 lteie7" lang="en"> <![endif]-->
-<!--[if IE 8]>    <html class="no-js ie8 lteie8" lang="en"> <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
-<head>
-  <meta charset="utf-8">
+<html class="no-js" lang="">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title></title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Scale image test</title>
-  <meta name="description" content="">
-  <meta name="author" content="Andrew Walker @ninjabiscuit">
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <link href="assets/style.css" media="screen" rel="stylesheet" type="text/css" />
-
-</head>
-
-<body>
-
-  <div class="container">
-
+    <link rel="stylesheet" href="/build/stylesheets/imageine-that.css">
+    <script src="/jspm_packages/system.js"></script>
+    <script src="/config.js"></script>
+  </head>
+  <body>
+    <div class="container">
       <header>
         <h1>Drag and drop</h1>
       </header>
-
       <div id="dropzone" class="dropzone">
         drop files here
       </div>
+      <div id="preview" class="preview">
+    </div>
 
-      <div id="preview"></div>
+    <script>
+      System.import('../src/javascripts/index').then(function(obj){
+        var dropZone = document.getElementById('dropzone');
 
-  </div> <!--! end of #container -->
-
-  <footer>
-  </footer>
-
-  <script src="../components/underscore/underscore.js"></script>
-  <script src="../components/jquery/dist/jquery.js"></script>
-  <script src="../components/Eventable/eventable.js"></script>
-  <script src="../dist/croppy.js"></script>
-  <script>
-    var dropZone = document.getElementById('dropzone');
-
-    function handleDragEnter(e) {
-      // this is the current hover target.
-      this.classList.add('over');
-    }
-
-    function handleDragLeave(e) {
-      // this is previous target element
-      this.classList.remove('over');
-    }
-
-    function handleDragOver(e) {
-      e.stopPropagation();
-      e.preventDefault();
-    }
-
-    // callback for the drop eventlistener
-    function handleDrop(e) {
-
-      this.classList.remove('over');
-
-      // Stops some browsers (I'm looking at you FF!) from redirecting.
-      e.stopPropagation();
-      e.preventDefault();
-
-      var c = new Croppy("#preview", {
-        max_letterbox_height: 20,
-        aspect_ratio : "16:9",
-        orientation : "landscape",
-        background: "assets/grey-background-7d68d57f56247ae92af0782c9b67f736.jpg",
-        font_family: "arial",
-        min_width: 640,
-        ui: {
-          enable_aspect_ratio: true
+        function handleDragEnter(e) {
+          // this is the current hover target.
+          this.classList.add('over');
         }
+
+        function handleDragLeave(e) {
+          // this is previous target element
+          this.classList.remove('over');
+        }
+
+        function handleDragOver(e) {
+          e.stopPropagation();
+          e.preventDefault();
+        }
+
+        // callback for the drop eventlistener
+        function handleDrop(e) {
+
+          this.classList.remove('over');
+
+          // Stops some browsers (I'm looking at you FF!) from redirecting.
+          e.stopPropagation();
+          e.preventDefault();
+
+          var c = new obj.ImageineThat(document.querySelector("#preview"), {
+            zoom: 10
+          });
+          c.load(e.dataTransfer.files[0]);
+        }
+
+        // Setup the dnd listeners.
+        dropZone.addEventListener('dragenter', handleDragEnter, false);
+        dropZone.addEventListener('dragleave', handleDragLeave, false);
+        dropZone.addEventListener('dragover', handleDragOver, false);
+        dropZone.addEventListener('drop', handleDrop, false);
       });
-      c.readFromFile(e.dataTransfer.files);
-      c.on("cropped", function(data){
-        var img = new Image();
-        img.src = data;
-        document.body.appendChild(img);
-      });
-      window.c = c;
-    }
-
-    // Setup the dnd listeners.
-    dropZone.addEventListener('dragenter', handleDragEnter, false);
-    dropZone.addEventListener('dragleave', handleDragLeave, false);
-    dropZone.addEventListener('dragover', handleDragOver, false);
-    dropZone.addEventListener('drop', handleDrop, false);
-
-  </script>
-
-</body>
+    </script>
+  </body>
 </html>

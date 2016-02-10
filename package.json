@@ -1,25 +1,26 @@
 {
-  "name": "Croppy",
-  "version": "0.0.1",
-  "author": {
-    "name": "Andrew Walker"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git@github.com:madebymany/croppy.git"
-  },
+  "name": "imageine_that",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "test": "grunt jasmine"
+    "test": "NODE_ENV=development ./node_modules/karma/bin/karma start karma.conf.js",
+    "gulp": "./node_modules/gulp/bin/gulp.js"
   },
-  "devDependencies": {
-    "grunt": "0.4.1",
-    "grunt-contrib-clean": "~0.4.0",
-    "grunt-contrib-jasmine": "0.8.2",
-    "grunt-contrib-jshint": "~0.2.0",
-    "grunt-contrib-jst": "^0.6.0",
-    "grunt-contrib-requirejs": "~0.4.0",
-    "grunt-contrib-uglify": "~0.1.2",
-    "grunt-contrib-watch": "~0.3.1",
-    "grunt-rigger": "0.4.0"
+  "author": "Andy Walker (@ninjabiscuit)",
+  "license": "MIT",
+  "devDependencies": {},
+  "jspm": {
+    "directories": {
+      "lib": "."
+    },
+    "dependencies": {
+      "events": "github:jspm/nodelibs-events@^0.1.1"
+    },
+    "devDependencies": {
+      "babel": "npm:babel-core@^5.8.24",
+      "babel-runtime": "npm:babel-runtime@^5.8.24",
+      "core-js": "npm:core-js@^1.1.4"
+    }
   }
 }
