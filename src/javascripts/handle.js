@@ -1,11 +1,13 @@
-const size = 20;
-const fill = "grey";
-const translateOffset = [[0, 0], [-size, 0], [-size, -size], [0, -size]];
+// 0  1  2
+// 7     3
+// 6  5  4
 
+const size = 20;
+const halfSize = size/2;
+const fill = "grey";
 
 export default class Handle {
-  constructor(i) {
-    this.position = i;
+  constructor() {
     this.setCoords(0, 0);
   }
 
@@ -16,13 +18,14 @@ export default class Handle {
 
   draw(context) {
     context.save();
-    context.translate(...translateOffset[this.position]);
+    context.fillStyle = fill;
+    context.translate(-halfSize, -halfSize);
     context.fillRect(this.x, this.y, size, size);
     context.restore();
   }
 
   contains(mx, my) {
-    return (this.x <= mx) && (this.x + size >= mx) &&
-      (this.y <= my) && (this.y + size >= my);
+    return (this.x - halfSize <= mx) && (this.x + halfSize >= mx) &&
+      (this.y -halfSize <= my) && (this.y + halfSize >= my);
   }
 }

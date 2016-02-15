@@ -1,24 +1,31 @@
 import Handle from "./handle";
 
 export default class CanvasState {
-  constructor({width, height}, canvas = document.createElement("canvas")) {
-    this.handles = [0,1,2,3].map(i => {
+  constructor(image, canvas = document.createElement("canvas")) {
+
+    let {width, height} = image;
+
+    this.handles = Array.apply(null, Array(8)).map((n, i) => {
       return new Handle(i);
-    });
-    this.dragging = false;
-    this.dragoff = {x:0,y:0};
-    this.mousepos = {x:0,y:0};
-    this.selection = null;
-    this.coords = [0, 0, width, height];
+    })
+
+    this.image = image;
+    this.startPosition = {x:0,y:0};
+    this.selectedIndex = -1;
+    this.cropArea = [0, 0, width, height];
+    this.newCropArea = this.cropArea;
     this.context = canvas.getContext("2d");
 
     canvas.addEventListener('selectstart', this.selectStart, false);
     canvas.addEventListener('mousedown', this.mouseDown, true);
     canvas.addEventListener('mousemove', this.mouseMove, true);
     canvas.addEventListener('mouseup', this.mouseUp, true);
+    canvas.addEventListener('mouseout', this.mouseUp, true);
 
     canvas.width = width;
     canvas.height = height;
+
+    this.render();
   }
 
   selectStart(e) {
@@ -30,89 +37,135 @@ export default class CanvasState {
     let mx = e.layerX,
         my = e.layerY;
 
-    let selected = this.handles.some(handle => {
+    this.selectedIndex = this.handles.findIndex((handle, i) => {
       if (!handle.contains(mx, my)) { return false; }
-      this.dragoff = {
-        x: mx - handle.x,
-        y: my - handle.y
+      this.startPosition = {
+        x: handle.x,
+        y: handle.y
       };
-      this.dragging = true;
-      this.selection = handle;
       return true;
     });
 
-    if (!selected) {
-      this.selection = null;
-      return;
-    }
-
-    this.mousepos = {x: mx, y: my};
     requestAnimationFrame(this.update);
   }
 
   mouseMove = (e) => {
-    if (!this.dragging) { return; }
-    this.mousepos = {x: e.layerX, y: e.layerY};
+    if (this.selectedIndex < 0) { return; }
+
+    let mx = e.layerX,
+        my = e.layerY;
+
+    let [x, y, w, h] = this.cropArea;
+
+    // 0  1  2
+    // 7     3
+    // 6  5  4
+    switch (this.selectedIndex) {
+      case 0:
+        x = mx;
+        y = my;
+        w += this.startPosition.x - mx;
+        h += this.startPosition.y - my;
+        break;
+      case 1:
+        y = my;
+        h += this.startPosition.y - my;
+        break;
+      case 2:
+        y = my;
+        w += mx - this.startPosition.x;
+        h += this.startPosition.y - my;
+        break;
+      case 3:
+        w += mx - this.startPosition.x;
+        break;
+      case 4:
+        w -= this.startPosition.x - mx;
+        h -= this.startPosition.y - my;
+        break;
+      case 5:
+        h -= this.startPosition.y - my;
+        break;
+      case 6:
+        x = mx;
+        w += this.startPosition.x - mx;
+        h -= this.startPosition.y - my;
+        break;
+      case 7:
+        x = mx;
+        w += this.startPosition.x - mx;
+        break;
+    }
+
+    this.newCropArea = [x, y, w, h];
   }
 
   mouseUp = () => {
-    this.dragging = false;
+    if (this.selectedIndex < 0) { return; }
+    this.selectedIndex = -1;
+    this.cropArea = this.newCropArea;
   }
 
-  render(image, position = {x:0, y:0}) {
+  update = () => {
+    if (this.selectedIndex < 0) { return; }
+    this.render();
+    requestAnimationFrame(this.update);
+  }
+
+  render(position = {x:0, y:0}) {
+    this.renderOverlay();
     this.context.globalCompositeOperation = 'destination-over';
     this.context.drawImage(
-      image,
+      this.image,
       position.x,
       position.y,
-      image.width,
-      image.height
+      this.image.width,
+      this.image.height
     );
     this.context.globalCompositeOperation = 'source-over';
   }
 
-  update = () => {
-    if (!this.dragging) { return; }
-    requestAnimationFrame(this.update);
-
-    // We don't want to drag the object by its top-left corner, we want to drag it
-    // from where we clicked. Thats why we saved the offset and use it here
-    this.selection.setCoords(
-      this.mousepos.x - this.dragoff.x,
-      this.mousepos.y - this.dragoff.y
-    );
-  }
-
   renderHandles() {
-    let [x1, y1, width, height] = this.coords;
-    let x2 = width + x1;
-    let y2 = height + y1;
-    let handleCoords = [[x1, y1], [x2, y1], [x2, y2], [x1, y2]];
 
-    this.context.save();
-    this.context.fillStyle = "grey";
+    // 0  1  2
+    // 7     3
+    // 6  5  4
+    let [x1, y1, width, height] = this.newCropArea;
+    let hw = width/2 + x1;
+    let hh = height/2 + y1;
+    width  = width + x1;
+    height = height + y1;
+
+    let handleCoords = [
+      [x1, y1],
+      [hw, y1],
+      [width, y1],
+      [width, hh],
+      [width, height],
+      [hw, height],
+      [x1, height],
+      [x1, hh]
+    ];
 
     this.handles.forEach((handle, i) => {
       handle.setCoords(...handleCoords[i]);
-    });
-
-    this.handles.forEach(handle => {
       handle.draw(this.context);
     });
-    this.context.restore();
   }
 
   renderOverlay() {
     let {width, height} = this.context.canvas;
 
+    this.context.clearRect(0, 0, width, height);
+
     this.context.save();
-    this.context.fillStyle = "rgba(0,0,0,0.7)";
+    this.context.fillStyle = "rgba(0,0,0,0.8)";
     this.context.fillRect(0, 0, width, height);
 
     this.context.beginPath();
-    this.context.rect(...this.coords);
+    this.context.rect(...this.newCropArea);
     this.context.clip()
-    this.context.clearRect(...this.coords);
+    this.context.clearRect(...this.newCropArea);
     this.context.restore();
 
     this.renderHandles();

@@ -50,8 +50,6 @@ export class ImageineThat extends events.EventEmitter {
     image.height = Math.round(image.width * ar)
 
     var canvas = new Canvas(image);
-    canvas.renderOverlay(image);
-    canvas.render(image);
     this.el.appendChild(canvas.context.canvas);
   }
 

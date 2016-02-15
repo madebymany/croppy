@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "NODE_ENV=development ./node_modules/karma/bin/karma start karma.conf.js",
-    "gulp": "./node_modules/gulp/bin/gulp.js"
+    "gulp": "./node_modules/gulp/bin/gulp.js",
+    "server": "python -m SimpleHTTPServer"
   },
   "author": "Andy Walker (@ninjabiscuit)",
   "license": "MIT",
