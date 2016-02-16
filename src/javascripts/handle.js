@@ -26,6 +26,6 @@ export default class Handle {
 
   contains(mx, my) {
     return (this.x - halfSize <= mx) && (this.x + halfSize >= mx) &&
-      (this.y -halfSize <= my) && (this.y + halfSize >= my);
+      (this.y - halfSize <= my) && (this.y + halfSize >= my);
   }
 }

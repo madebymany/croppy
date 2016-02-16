@@ -33,46 +33,41 @@ export default class CanvasState {
     return false;
   }
 
-  mouseDown = (e) => {
-    let mx = e.layerX,
-        my = e.layerY;
-
-    this.selectedIndex = this.handles.findIndex((handle, i) => {
-      if (!handle.contains(mx, my)) { return false; }
-      this.startPosition = {
-        x: handle.x,
-        y: handle.y
-      };
-      return true;
-    });
-
-    requestAnimationFrame(this.update);
+  insideCropArea(mx, my) {
+    const [x, y, width, height] = this.cropArea;
+    return ((x <= mx) && (x + width >= mx) && (y <= my) && (y + height >= my));
   }
 
-  mouseMove = (e) => {
-    if (this.selectedIndex < 0) { return; }
-
-    let mx = e.layerX,
-        my = e.layerY;
-
+  moveCropArea(mx, my) {
     let [x, y, w, h] = this.cropArea;
+
+    x += mx - this.startPosition.x;
+    y += my - this.startPosition.y;
+    return [x, y, w, h];
+  }
+
+  resizeCropArea(mx, my) {
+    let [x, y, w, h] = this.cropArea;
+
+    const newx = mx - this.startPosition.x;
+    const newy = my - this.startPosition.y;
 
     // 0  1  2
     // 7     3
     // 6  5  4
     switch (this.selectedIndex) {
       case 0:
-        x = mx;
-        y = my;
+        x += newx;
+        y += newy;
         w += this.startPosition.x - mx;
         h += this.startPosition.y - my;
         break;
       case 1:
-        y = my;
+        y += newy;
         h += this.startPosition.y - my;
         break;
       case 2:
-        y = my;
+        y += newy;
         w += mx - this.startPosition.x;
         h += this.startPosition.y - my;
         break;
@@ -87,27 +82,63 @@ export default class CanvasState {
         h -= this.startPosition.y - my;
         break;
       case 6:
-        x = mx;
+        x += newx;
         w += this.startPosition.x - mx;
         h -= this.startPosition.y - my;
         break;
       case 7:
-        x = mx;
+        x += newx;
         w += this.startPosition.x - mx;
         break;
     }
 
-    this.newCropArea = [x, y, w, h];
+    return [x, y, w, h];
+  }
+
+
+  mouseDown = (e) => {
+    const mx = e.layerX;
+    const my = e.layerY;
+
+    this.selectedIndex = this.handles.findIndex((handle, i) => {
+      if (!handle.contains(mx, my)) { return false; }
+      return true;
+    });
+
+    if (this.selectedIndex < 0 && this.insideCropArea(mx, my)) {
+      this.isMoving = true;
+    }
+
+    if (this.selectedIndex >= 0 || this.isMoving) {
+      this.startPosition = { x: mx, y: my };
+      requestAnimationFrame(this.update);
+    }
+  }
+
+  mouseMove = (e) => {
+
+    const mx = e.layerX;
+    const my = e.layerY;
+
+    if (this.isMoving){
+      this.newCropArea = this.moveCropArea(mx, my);
+      return;
+    }
+
+    if (this.selectedIndex >= 0) {
+      this.newCropArea = this.resizeCropArea(mx, my);
+      return;
+    }
   }
 
   mouseUp = () => {
-    if (this.selectedIndex < 0) { return; }
     this.selectedIndex = -1;
+    this.isMoving = false;
     this.cropArea = this.newCropArea;
   }
 
   update = () => {
-    if (this.selectedIndex < 0) { return; }
+    if (this.selectedIndex < 0 && !this.isMoving) { return; }
     this.render();
     requestAnimationFrame(this.update);
   }
@@ -130,20 +161,20 @@ export default class CanvasState {
     // 0  1  2
     // 7     3
     // 6  5  4
-    let [x1, y1, width, height] = this.newCropArea;
-    let hw = width/2 + x1;
-    let hh = height/2 + y1;
-    width  = width + x1;
-    height = height + y1;
+    const [x1, y1, width, height] = this.newCropArea;
+    const hw = width/2 + x1;
+    const hh = height/2 + y1;
+    const w  = width + x1;
+    const h  = height + y1;
 
     let handleCoords = [
       [x1, y1],
       [hw, y1],
-      [width, y1],
-      [width, hh],
-      [width, height],
-      [hw, height],
-      [x1, height],
+      [w, y1],
+      [w, hh],
+      [w, h],
+      [hw, h],
+      [x1, h],
       [x1, hh]
     ];
 
