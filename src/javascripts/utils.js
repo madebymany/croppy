@@ -29,3 +29,13 @@ export function loadImage(src, crossOrigin = null) {
 export function aspectRatio({width, height}) {
   return height / width;
 };
+
+export function checkElement(element) {
+  if (element === null) {
+    throw "Error: no element provided";
+  }
+  if (typeof element === "string") {
+    return document.querySelector(element);
+  }
+  return element;
+};

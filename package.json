@@ -5,12 +5,16 @@
   "main": "index.js",
   "scripts": {
     "test": "NODE_ENV=development ./node_modules/karma/bin/karma start karma.conf.js",
-    "gulp": "./node_modules/gulp/bin/gulp.js",
-    "server": "python -m SimpleHTTPServer"
+    "start": "python -m SimpleHTTPServer"
   },
   "author": "Andy Walker (@ninjabiscuit)",
   "license": "MIT",
-  "devDependencies": {},
+  "devDependencies": {
+    "autoprefixer": "^6.3.3",
+    "csso": "^1.5.4",
+    "jspm": "^0.16.30",
+    "node-sass": "^3.4.2"
+  },
   "jspm": {
     "directories": {
       "lib": "."

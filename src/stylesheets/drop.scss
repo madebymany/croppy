@@ -1,0 +1,29 @@
+.dropzone {
+  text-align:center;
+  background:#999;
+  border:1px solid #fff;
+  background-clip: padding-box;
+  border-radius: 10px;
+  padding:10px;
+  margin-bottom:20px;
+}
+
+.preview {
+  text-align:center;
+  margin-bottom:15px;
+  position:relative;
+}
+
+.over {
+  background:green;
+}
+
+.active:active {
+  cursor:move;
+}
+
+[draggable] {
+  user-select: none;
+}
+
+

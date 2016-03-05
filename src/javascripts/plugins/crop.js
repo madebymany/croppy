@@ -3,15 +3,9 @@
 import Handle from "./handle";
 
 export default class CanvasState {
-  constructor(image, canvas = document.createElement("canvas")) {
+  constructor() {
 
     let {width, height} = image;
-
-    canvas.width = width;
-    canvas.height = height;
-
-    this.image = image;
-    this.context = canvas.getContext("2d");
 
     this.handles = [
       [0,0],
@@ -24,7 +18,7 @@ export default class CanvasState {
       [0,.5]
     ].map(offset => {
       return new Handle(offset);
-    })
+    });
 
     this.startPosition = {x:0,y:0};
     this.selectedHandle = -1;
@@ -268,3 +262,4 @@ export default class CanvasState {
     this.renderGrid();
   }
 }
+

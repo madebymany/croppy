@@ -1,0 +1,22 @@
+{
+	"version": 3,
+	"file": "croppy.css",
+	"sources": [
+		"../src/stylesheets/croppy.scss",
+		"../src/stylesheets/layout.scss",
+		"../src/stylesheets/typography.scss",
+		"../src/stylesheets/drop.scss",
+		"../src/stylesheets/canvas.scss",
+		"../src/stylesheets/rotate.scss"
+	],
+	"sourcesContent": [
+		"@import 'layout';\n@import 'typography';\n@import 'drop';\n@import 'canvas';\n@import 'rotate';\n\n",
+		"body {\n  background:#444;\n  margin:0;\n  padding:0;\n  color:#fff;\n  font-family:arial;\n}\n\n.container {\n  width:800px;\n  margin:50px auto;\n}\n\n",
+		"h1 {\n  font-family:\"Reem\";\n}\n\n",
+		".dropzone {\n  text-align:center;\n  background:#999;\n  border:1px solid #fff;\n  background-clip: padding-box;\n  border-radius: 10px;\n  padding:10px;\n  margin-bottom:20px;\n}\n\n.preview {\n  text-align:center;\n  margin-bottom:15px;\n  position:relative;\n}\n\n.over {\n  background:green;\n}\n\n.active:active {\n  cursor:move;\n}\n\n[draggable] {\n  user-select: none;\n}\n\n\n",
+		"canvas {\n  position:relative;\n  border:1px solid #000;\n  cursor:move;\n  overflow: auto\n}\n\n.active:active {\n  cursor:move;\n}\n\n\n",
+		".rotate-wheel {\n  position: absolute;\n  top: 50%;\n  transform: translateY(-50%);\n  right: -40px;\n  transform-origin: center;\n  transform-style: preserve-3D;\n}\n\n.preview:after {\n  content: \"\";\n  display: block;\n  width: 0;\n  height: 0;\n  border-top: 5px solid transparent;\n  border-bottom: 5px solid transparent;\n  border-right: 5px solid #000;\n  position: absolute;\n  top: 50%;\n  transform: translateY(-50%);\n  right: -50px;\n}\n"
+	],
+	"mappings": "ACAA,IAAI,AAAC,CACH,UAAU,CAAC,IAAK,CAChB,MAAM,CAAC,CAAE,CACT,OAAO,CAAC,CAAE,CACV,KAAK,CAAC,IAAK,CACX,WAAW,CAAC,KAAM,CACnB,AAED,UAAU,AAAC,CACT,KAAK,CAAC,KAAM,CACZ,MAAM,CAAC,SAAU,CAClB,ACXD,EAAE,AAAC,CACD,WAAW,CAAC,MAAO,CACpB,ACFD,SAAS,AAAC,CACR,UAAU,CAAC,MAAO,CAClB,UAAU,CAAC,IAAK,CAChB,MAAM,CAAC,cAAe,CACtB,eAAe,CAAE,WAAY,CAC7B,aAAa,CAAE,IAAK,CACpB,OAAO,CAAC,IAAK,CACb,aAAa,CAAC,IAAK,CACpB,AAED,QAAQ,AAAC,CACP,UAAU,CAAC,MAAO,CAClB,aAAa,CAAC,IAAK,CACnB,QAAQ,CAAC,QAAS,CACnB,AAED,KAAK,AAAC,CACJ,UAAU,CAAC,KAAM,CAClB,AAED,OAAO,AAAA,OAAO,AAAC,CACb,MAAM,CAAC,IAAK,CACb,CAED,AAAA,SAAC,AAAA,CAAW,CACV,WAAW,CAAE,IAAK,CACnB,AC1BD,MAAM,AAAC,CACL,QAAQ,CAAC,QAAS,CAClB,MAAM,CAAC,cAAe,CACtB,MAAM,CAAC,IAAK,CACZ,QAAQ,CAAE,IACX,CAAC,AAEF,OAAO,AAAA,OAAO,AAAC,CACb,MAAM,CAAC,IAAK,CACb,ACTD,aAAa,AAAC,CACZ,QAAQ,CAAE,QAAS,CACnB,GAAG,CAAE,GAAI,CACT,SAAS,CAAE,gBAAU,CACrB,KAAK,CAAE,KAAM,CACb,gBAAgB,CAAE,MAAO,CACzB,eAAe,CAAE,WAAY,CAC9B,AAED,QAAQ,AAAA,MAAM,AAAC,CACb,OAAO,CAAE,EAAG,CACZ,OAAO,CAAE,KAAM,CACf,KAAK,CAAE,CAAE,CACT,MAAM,CAAE,CAAE,CACV,UAAU,CAAE,qBAAsB,CAClC,aAAa,CAAE,qBAAsB,CACrC,YAAY,CAAE,cAAe,CAC7B,QAAQ,CAAE,QAAS,CACnB,GAAG,CAAE,GAAI,CACT,SAAS,CAAE,gBAAU,CACrB,KAAK,CAAE,KAAM,CACd",
+	"names": []
+}

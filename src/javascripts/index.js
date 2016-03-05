@@ -2,7 +2,7 @@
 
 import events from "events";
 import Canvas from "./canvas";
-import { readFile, loadImage, aspectRatio} from "./utils";
+import { readFile, loadImage, aspectRatio, checkElement} from "./utils";
 
 const privateMap = new WeakMap();
 
@@ -16,42 +16,53 @@ const privateMap = new WeakMap();
 //};
 // }}}
 
-export class ImageineThat extends events.EventEmitter {
+export class Croppy extends events.EventEmitter {
 
-  constructor(el, options) {
+  constructor(image, element) {
+
     super();
-    this.el = el;
+
+    this.element = checkElement(element);
+
+    this.load(image).then((image) => {
+      this.appendTo(image, element);
+    });
   }
 
-  async load(input) {
-    let img;
-
-    if (typeof input === "string") {
-      img = await loadImage(input, "use credentials");
-      this.initialize(img);
-      return;
+  async load(image) {
+    if (typeof image === "string") {
+      return await loadImage(image, "use credentials");
     }
 
-    if (!/^image/.test(input.type)) { 
+    if (!/^image/.test(image.type)) {
       throw "Error: file is not an image"; 
     }
 
-    img = await readFile(input);
-    img = await loadImage(img);
-    this.initialize(img);
+    image = await readFile(image);
+    return await loadImage(image);
   }
 
-  initialize(image) {
-    let ar = aspectRatio(image);
+  appendTo(image, element) {
+
+    if (!image) {
+      throw "Error: no image provided";
+    }
+
     privateMap.set({originalImage: image});
 
-    image = image.cloneNode();
-    image.width  = this.el.offsetWidth;
+    element = checkElement(element);
+    image   = image.cloneNode();
+
+    let ar = aspectRatio(image);
+
+    image.width  = element.offsetWidth;
     image.height = Math.round(image.width * ar)
 
-    var canvas = new Canvas(image);
-    this.el.appendChild(canvas.context.canvas);
+    let canvas = new Canvas(image);
+
+    element.appendChild(canvas.context.canvas);
   }
+
 
 // {{{
   //use(configurePlugin) {

@@ -2,11 +2,10 @@
 1 verbose cli [ 'node',
 1 verbose cli   '/Users/andrewwalker/.nvm/v0.10.36/bin/npm',
 1 verbose cli   'run',
-1 verbose cli   'servervim',
-1 verbose cli   '.' ]
+1 verbose cli   'server' ]
 2 info using npm@3.2.2
 3 info using node@v0.10.36
-4 verbose stack Error: missing script: servervim
+4 verbose stack Error: missing script: server
 4 verbose stack     at run (/Users/andrewwalker/.nvm/v0.10.36/lib/node_modules/npm/lib/run-script.js:148:19)
 4 verbose stack     at /Users/andrewwalker/.nvm/v0.10.36/lib/node_modules/npm/lib/run-script.js:58:5
 4 verbose stack     at /Users/andrewwalker/.nvm/v0.10.36/lib/node_modules/npm/node_modules/read-package-json/read-json.js:345:5
@@ -19,10 +18,10 @@
 4 verbose stack     at Object.oncomplete (evalmachine.<anonymous>:108:15)
 5 verbose cwd /Users/andrewwalker/sites/croppy
 6 error Darwin 15.0.0
-7 error argv "node" "/Users/andrewwalker/.nvm/v0.10.36/bin/npm" "run" "servervim" "."
+7 error argv "node" "/Users/andrewwalker/.nvm/v0.10.36/bin/npm" "run" "server"
 8 error node v0.10.36
 9 error npm  v3.2.2
-10 error missing script: servervim
+10 error missing script: server
 11 error If you need help, you may report this error at:
 11 error     <https://github.com/npm/npm/issues>
 12 verbose exit [ 1, true ]

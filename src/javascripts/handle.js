@@ -3,12 +3,15 @@
 // 6  5  4
 
 const size = 20;
-const halfSize = size/2;
 const fill = "grey";
 
 export default class Handle {
-  constructor() {
+  constructor([x, y]) {
     this.setCoords(0, 0);
+    this.offset = {
+      x: size * x,
+      y: size * y
+    };
   }
 
   setCoords(x, y) {
@@ -19,13 +22,15 @@ export default class Handle {
   draw(context) {
     context.save();
     context.fillStyle = fill;
-    context.translate(-halfSize, -halfSize);
+    context.translate(-this.offset.x, -this.offset.y);
     context.fillRect(this.x, this.y, size, size);
     context.restore();
   }
 
   contains(mx, my) {
-    return (this.x - halfSize <= mx) && (this.x + halfSize >= mx) &&
-      (this.y - halfSize <= my) && (this.y + halfSize >= my);
+    let x = this.x - this.offset.x;
+    let y = this.y - this.offset.y
+
+    return (x <= mx) && (x + size >= mx) && (y <= my) && (y + size >= my);
   }
 }
