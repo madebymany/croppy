@@ -2,6 +2,8 @@
 
 import events from "events";
 import Canvas from "./canvas";
+import * as store from "./store";
+import {plugins} from "./plugins/index";
 import { readFile, loadImage, aspectRatio, checkElement} from "./utils";
 
 const privateMap = new WeakMap();
@@ -48,20 +50,41 @@ export class Croppy extends events.EventEmitter {
       throw "Error: no image provided";
     }
 
-    privateMap.set({originalImage: image});
+    privateMap.set(this, {originalImage: image});
 
     element = checkElement(element);
     image   = image.cloneNode();
 
     let ar = aspectRatio(image);
 
-    image.width  = element.offsetWidth;
-    image.height = Math.round(image.width * ar)
+    let el = document.createElement("canvas");
+    let st = store.createStore({
+      image,
+      context: el.getContext("2d")
+    });
 
-    let canvas = new Canvas(image);
+    el.width = image.width  = element.offsetWidth;
+    el.height = image.height = Math.round(image.width * ar)
 
-    element.appendChild(canvas.context.canvas);
+    element.appendChild(el);
+
+    plugins.forEach(plugin => plugin(st, this));
+    this.render(st.getState());
+
   }
+
+  render(state, position = {x:0, y:0}, width, height) {
+    state.context.globalCompositeOperation = 'destination-over';
+    state.context.drawImage(
+      state.image,
+      position.x,
+      position.y,
+      width || state.image.width,
+      height || state.image.height
+    );
+    state.context.globalCompositeOperation = 'source-over';
+  }
+
 
 
 // {{{

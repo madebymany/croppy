@@ -1,2 +1,3 @@
 import crop from './crop';
-export {crop};
+import rotate from './rotate';
+export var plugins = [crop, rotate];

@@ -1,6 +1,9 @@
 "use strict";
 
-import Handle from "./handle";
+import {Handle, handleOffsets} from "./handle";
+
+const MOVE = "MOVE";
+const RESIZE = "RESIZE";
 
 export default class CanvasState {
   constructor(image, canvas = document.createElement("canvas")) {
@@ -13,23 +16,17 @@ export default class CanvasState {
     this.image = image;
     this.context = canvas.getContext("2d");
 
-    this.handles = [
-      [0,0],
-      [.5,0],
-      [1,0],
-      [1,.5],
-      [1,1],
-      [.5,1],
-      [0,1],
-      [0,.5]
-    ].map(offset => {
-      return new Handle(offset);
-    })
-
-    this.startPosition = {x:0,y:0};
-    this.selectedHandle = -1;
-    this.cropArea = [0, 0, width, height];
-    this.newCropArea = this.cropArea;
+    //createStore({
+      //image: image,
+      //context: canvas.getContext("2d"),
+      //handles: handleOffsets.map(offset => {
+        //return new Handle(offset);
+      //}),
+      //action: "",
+      //startPosition: {x:0,y:0},
+      //selectedHandle: -1,
+      //cropArea: [0, 0, width, height]
+    //});
 
     var events = {
       "selectstart": this.selectStart,
@@ -59,58 +56,55 @@ export default class CanvasState {
     return ((x <= mx) && (x + width >= mx) && (y <= my) && (y + height >= my));
   }
 
-  moveCropArea(mx, my) {
+  moveCropArea(deltaX, deltaY) {
     let [x, y, w, h] = this.cropArea;
 
-    x += mx - this.startPosition.x;
-    y += my - this.startPosition.y;
+    x += deltaX;
+    y += deltaY;
 
     return this.fitWithinBounds([x, y, w, h]);
   }
 
-  resizeCropArea(mx, my) {
+  resizeCropArea(deltaX, deltaY) {
     let [x, y, w, h] = this.cropArea;
-
-    const newx = mx - this.startPosition.x;
-    const newy = my - this.startPosition.y;
 
     // 0  1  2
     // 7     3
     // 6  5  4
     switch (this.selectedHandle) {
       case 0:
-        x += newx;
-        y += newy;
-        w += this.startPosition.x - mx;
-        h += this.startPosition.y - my;
+        x += deltaX;
+        y += deltaY;
+        w -= deltaX;
+        h -= deltaY;
         break;
       case 1:
-        y += newy;
-        h += this.startPosition.y - my;
+        y += deltaY;
+        h -= deltaY;
         break;
       case 2:
-        y += newy;
-        w += mx - this.startPosition.x;
-        h += this.startPosition.y - my;
+        y += deltaY;
+        w += deltaX;
+        h -= deltaY;
         break;
       case 3:
-        w += mx - this.startPosition.x;
+        w += deltaX;
         break;
       case 4:
-        w -= this.startPosition.x - mx;
-        h -= this.startPosition.y - my;
+        w += deltaX;
+        h += deltaY;
         break;
       case 5:
-        h -= this.startPosition.y - my;
+        h += deltaY;
         break;
       case 6:
-        x += newx;
-        w += this.startPosition.x - mx;
-        h -= this.startPosition.y - my;
+        x += deltaX;
+        w -= deltaX;
+        h += deltaY;
         break;
       case 7:
-        x += newx;
-        w += this.startPosition.x - mx;
+        x += deltaX;
+        w -= deltaX;
         break;
     }
 
@@ -122,45 +116,50 @@ export default class CanvasState {
     const mx = e.layerX;
     const my = e.layerY;
 
+    this.startPosition = { x: mx, y: my };
+
     this.selectedHandle = this.handles.findIndex((handle, i) => {
-      if (!handle.contains(mx, my)) { return false; }
-      return true;
+      return handle.contains(mx, my);
     });
 
-    if (this.selectedHandle < 0 && this.insideCropArea(mx, my)) {
-      this.isMoving = true;
+    if (this.selectedHandle >= 0) {
+      this.action = RESIZE;
+      requestAnimationFrame(this.update);
+      return;
     }
 
-    if (this.selectedHandle >= 0 || this.isMoving) {
-      this.startPosition = { x: mx, y: my };
+    if (this.insideCropArea(mx, my)) {
+      this.action = MOVE;
       requestAnimationFrame(this.update);
+      return;
     }
   }
 
   mouseMove = (e) => {
 
-    const mx = e.layerX;
-    const my = e.layerY;
+    const newPosition = {x: e.layerX, y: e.layerY};
+    const deltaX = newPosition.x - this.startPosition.x;
+    const deltaY = newPosition.y - this.startPosition.y;
 
-    if (this.isMoving){
-      this.newCropArea = this.moveCropArea(mx, my);
+    if (this.action === MOVE){
+      this.cropArea = this.moveCropArea(deltaX, deltaY);
+      this.startPosition = newPosition;
       return;
     }
 
-    if (this.selectedHandle >= 0) {
-      this.newCropArea = this.resizeCropArea(mx, my);
+    if (this.action === RESIZE) {
+      this.cropArea = this.resizeCropArea(deltaX, deltaY);
+      this.startPosition = newPosition;
       return;
     }
   }
 
   mouseUp = () => {
-    this.selectedHandle = -1;
-    this.isMoving = false;
-    this.cropArea = this.newCropArea;
+    this.action = "";
   }
 
   update = () => {
-    if (this.selectedHandle < 0 && !this.isMoving) { return; }
+    if (!this.action) { return; }
     this.render();
     requestAnimationFrame(this.update);
   }
@@ -179,25 +178,12 @@ export default class CanvasState {
     ];
   }
 
-  render(position = {x:0, y:0}) {
-    this.renderOverlay();
-    this.context.globalCompositeOperation = 'destination-over';
-    this.context.drawImage(
-      this.image,
-      position.x,
-      position.y,
-      this.image.width,
-      this.image.height
-    );
-    this.context.globalCompositeOperation = 'source-over';
-  }
-
   renderHandles() {
 
     // 0  1  2
     // 7     3
     // 6  5  4
-    const [x1, y1, width, height] = this.newCropArea;
+    const [x1, y1, width, height] = this.cropArea;
     const hw = width/2 + x1;
     const hh = height/2 + y1;
     const w  = width + x1;
@@ -223,7 +209,7 @@ export default class CanvasState {
   }
 
   renderGrid() {
-    let [x, y, w, h] = this.newCropArea;
+    let [x, y, w, h] = this.cropArea;
 
     let h1 = (w / 3);
     let h2 = h1*2 + x;
@@ -259,9 +245,9 @@ export default class CanvasState {
     this.context.fillRect(0, 0, width, height);
 
     this.context.beginPath();
-    this.context.rect(...this.newCropArea);
+    this.context.rect(...this.cropArea);
     this.context.clip()
-    this.context.clearRect(...this.newCropArea);
+    this.context.clearRect(...this.cropArea);
     this.context.restore();
 
     this.renderHandles();

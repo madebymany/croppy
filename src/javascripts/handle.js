@@ -5,7 +5,7 @@
 const size = 20;
 const fill = "grey";
 
-export default class Handle {
+export class Handle {
   constructor([x, y]) {
     this.setCoords(0, 0);
     this.offset = {
@@ -34,3 +34,14 @@ export default class Handle {
     return (x <= mx) && (x + size >= mx) && (y <= my) && (y + size >= my);
   }
 }
+
+export var handleOffsets = [
+  [0,0],
+  [.5,0],
+  [1,0],
+  [1,.5],
+  [1,1],
+  [.5,1],
+  [0,1],
+  [0,.5]
+];
