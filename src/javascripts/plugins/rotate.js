@@ -1,6 +1,7 @@
 "use strict";
 
 const TO_RADIANS = Math.PI/180;
+const ANGLE_LIMIT = 45;
 
 export default function rotate(store, croppy) {
 
@@ -11,7 +12,13 @@ export default function rotate(store, croppy) {
       wheel.src = "/src/images/rotate-dial-01.svg";
       wheel.classList.add("rotate-wheel");
 
+  //let boom = document.createElement("div");
+  //boom.classList.add("boom");
+
   canvas.parentNode.insertBefore(wheel, canvas);
+  //canvas.parentNode.insertBefore(boom, canvas);
+  //boom.style.width = `${state.image.width}px`;
+  //boom.style.height = `${state.image.height}px`;
 
   let rotateAngle = 0;
   let action = "";
@@ -45,6 +52,8 @@ export default function rotate(store, croppy) {
   function mousemove(e) {
     if (!action) { return; }
     angle = (startAngle - e.layerY);
+    angle = (angle >= ANGLE_LIMIT) ? ANGLE_LIMIT :
+            (angle <= -ANGLE_LIMIT) ? -ANGLE_LIMIT : angle;
   }
 
   function mouseup() {
@@ -52,26 +61,25 @@ export default function rotate(store, croppy) {
   }
 
   function getScale() {
-    let radians = angle * TO_RADIANS;
+    let radians = Math.abs(angle * TO_RADIANS);
 
-    let a = state.image.height * Math.sin(radians);
-    let b = state.image.width * Math.cos(radians);
-    let c = state.image.width * Math.sin(radians);
-    let d = state.image.height * Math.cos(radians);
+    let a = Math.abs(state.image.height * Math.sin(radians));
+    let b = Math.abs(state.image.width * Math.cos(radians));
+    let c = Math.abs(state.image.width * Math.sin(radians));
+    let d = Math.abs(state.image.height * Math.cos(radians));
 
-    //console.log([a, b, c, d]);
-
-    return Math.max(state.image.width / (a + b), state.image.height / (c + d));
+    return Math.max((a+b) / state.image.width, (c+d) / state.image.height);
   };
 
   function update() {
     if (!action) { return; }
     let state = store.getState();
     let scale = getScale();
-    let width = state.image.width * scale;
-    let height = state.image.height * scale;
+    let width =  state.image.width * scale;
+    let height =  state.image.height * scale;
 
-    //wheel.style.transform = `translateY(-50%) rotate(${angle}deg)`;
+    //boom.style.transform = `translateZ(0) rotate(${angle}deg)`;
+    wheel.style.transform = `translateZ(0) translateY(-50%) rotate(${angle}deg)`;
     state.context.clearRect(0, 0, canvas.width, canvas.height);
     state.context.save();
     state.context.translate(canvas.width/2, canvas.height/2);
@@ -80,4 +88,15 @@ export default function rotate(store, croppy) {
     state.context.restore(); 
     requestAnimationFrame(update);
   }
+
+  function flip(a) {
+    angle = a;
+    action = "flip";
+    update();
+    action = "";
+  }
+
+  window.flip = flip;
+
+  return {flip};
 }

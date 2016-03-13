@@ -7,6 +7,10 @@
   transform-style: preserve-3D;
 }
 
+.preview {
+  position:relative;
+}
+
 .preview:after {
   content: "";
   display: block;
@@ -19,4 +23,10 @@
   top: 50%;
   transform: translateY(-50%);
   right: -50px;
+}
+
+.boom {
+  display:block;
+  position:absolute;
+  border:1px solid #000;
 }
