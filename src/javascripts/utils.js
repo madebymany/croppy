@@ -39,3 +39,7 @@ export function checkElement(element) {
   }
   return element;
 };
+
+export function raf(callback, ...args) {
+  return requestAnimationFrame(t => callback(...args));
+};

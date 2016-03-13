@@ -5,9 +5,9 @@ import {Handle, handleOffsets} from "../handle";
 const MOVE = "MOVE";
 const RESIZE = "RESIZE";
 
-export default function crop(store, croppy) {
+export default function crop(appState, croppy) {
 
-  var state = store.getState();
+  var state = appState;
 
   var handles = handleOffsets.map(offset => {
     return new Handle(offset);

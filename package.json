@@ -20,7 +20,8 @@
       "lib": "."
     },
     "dependencies": {
-      "events": "github:jspm/nodelibs-events@^0.1.1"
+      "events": "github:jspm/nodelibs-events@^0.1.1",
+      "store-emitter": "npm:store-emitter@^2.1.0"
     },
     "devDependencies": {
       "babel": "npm:babel-core@^5.8.24",

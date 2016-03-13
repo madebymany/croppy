@@ -1,42 +1,101 @@
 "use strict";
 
+import createStore from "store-emitter";
+import { raf } from "../utils";
+
+const START_ROTATE = "START_ROTATE";
+const STOP_ROTATE  = "STOP_ROTATE";
+const ROTATE       = "ROTATE";
+const FLIP         = "FLIP";
+
 const TO_RADIANS = Math.PI/180;
 const ANGLE_LIMIT = 45;
 
-export default function rotate(store, croppy) {
+function modifier (action, state) {
 
-  let state = store.getState();
-  let canvas = state.context.canvas;
+  switch (action.type) {
+    case START_ROTATE:
+      return Object.assign({}, state, {
+        startPosition: state.angle - action.position,
+        rotating: true
+      });
 
-  let wheel = document.createElement("img");
-      wheel.src = "/src/images/rotate-dial-01.svg";
-      wheel.classList.add("rotate-wheel");
+    case STOP_ROTATE:
+      return Object.assign({}, state, {
+        rotating: false
+      });
 
-  //let boom = document.createElement("div");
-  //boom.classList.add("boom");
+    case ROTATE:
+      if (!state.rotating) { return state; }
+      let angle = state.startPosition + action.position;
+      return Object.assign({}, state, {
+        angle: (angle >= ANGLE_LIMIT) ? ANGLE_LIMIT :
+               (angle <= -ANGLE_LIMIT) ? -ANGLE_LIMIT : angle
+      });
 
-  canvas.parentNode.insertBefore(wheel, canvas);
-  //canvas.parentNode.insertBefore(boom, canvas);
-  //boom.style.width = `${state.image.width}px`;
-  //boom.style.height = `${state.image.height}px`;
+    case FLIP:
+      return Object.assign({}, state, {
+        angle: 0,
+        flipAngle: action.angle
+      });
 
-  let rotateAngle = 0;
-  let action = "";
-  let angle = 0;
-  let startAngle = 0;
+    default:
+      return state;
+  }
+}
 
-  let events = {
-    selectstart,
-    mousedown,
-    mousemove,
-    mouseup,
-    mouseout: mouseup,
-    dragstart: selectstart
-  };
+function getScale(angle, width, height) {
+  let radians = Math.abs(angle);
 
-  Object.keys(events).forEach(event => {
-    wheel.addEventListener(event, events[event], true);
+  let a = Math.abs(height * Math.sin(radians));
+  let b = Math.abs(width * Math.cos(radians));
+  let c = Math.abs(width * Math.sin(radians));
+  let d = Math.abs(height * Math.cos(radians));
+
+  return Math.max((a + b) / width, (c + d) / height);
+};
+
+export default function rotate(appState, croppy) {
+
+  const store = createStore(modifier, {
+    ...appState,
+    startPosition: 0,
+    angle: 0,
+    flipAngle: 0,
+    rotating: false,
+    wheel: createWheel(appState.context.canvas)
   });
+
+  store.on(START_ROTATE, (action, state, oldState) => {
+    raf(update, state);
+  });
+
+  store.on(FLIP, (action, state, oldState) => {
+    update(state);
+  });
+
+  function createWheel(element) {
+    let wheel  = document.createElement("img");
+    let events = {
+      selectstart,
+      mousedown,
+      mousemove,
+      mouseup,
+      mouseout: mouseup,
+      dragstart: selectstart
+    };
+
+    wheel.src = "/src/images/rotate-dial-01.svg";
+    wheel.classList.add("rotate-wheel");
+
+    Object.keys(events).forEach(event => {
+      wheel.addEventListener(event, events[event], true);
+    });
+
+    element.parentNode.insertBefore(wheel, element);
+
+    return wheel;
+  }
 
   function selectstart(e) {
     e.preventDefault();
@@ -44,56 +103,50 @@ export default function rotate(store, croppy) {
   }
 
   function mousedown(e) {
-    action = "ROTATE";
-    startAngle = angle + e.layerY;
-    requestAnimationFrame(update);
+    store({
+      type: START_ROTATE,
+      position: e.layerY
+    });
   }
 
   function mousemove(e) {
-    if (!action) { return; }
-    angle = (startAngle - e.layerY);
-    angle = (angle >= ANGLE_LIMIT) ? ANGLE_LIMIT :
-            (angle <= -ANGLE_LIMIT) ? -ANGLE_LIMIT : angle;
+    store({
+      type: ROTATE,
+      position: e.layerY
+    });
   }
 
   function mouseup() {
-    action = "";
+    store({ type: STOP_ROTATE });
   }
 
-  function getScale() {
-    let radians = Math.abs(angle * TO_RADIANS);
-
-    let a = Math.abs(state.image.height * Math.sin(radians));
-    let b = Math.abs(state.image.width * Math.cos(radians));
-    let c = Math.abs(state.image.width * Math.sin(radians));
-    let d = Math.abs(state.image.height * Math.cos(radians));
-
-    return Math.max((a+b) / state.image.width, (c+d) / state.image.height);
-  };
-
-  function update() {
-    if (!action) { return; }
-    let state = store.getState();
-    let scale = getScale();
-    let width =  state.image.width * scale;
-    let height =  state.image.height * scale;
-
-    //boom.style.transform = `translateZ(0) rotate(${angle}deg)`;
-    wheel.style.transform = `translateZ(0) translateY(-50%) rotate(${angle}deg)`;
-    state.context.clearRect(0, 0, canvas.width, canvas.height);
-    state.context.save();
-    state.context.translate(canvas.width/2, canvas.height/2);
-    state.context.rotate(angle * TO_RADIANS);
-    croppy.render(state, {x: -width/2, y: -height/2}, width, height);
-    state.context.restore(); 
-    requestAnimationFrame(update);
+  function flip(angle) {
+    store({
+      type: FLIP,
+      angle
+    });
   }
 
-  function flip(a) {
-    angle = a;
-    action = "flip";
-    update();
-    action = "";
+  function update(state) {
+    let {wheel, context, image, angle, flipAngle} = state;
+
+    flipAngle = flipAngle * TO_RADIANS;
+    angle = angle * TO_RADIANS;
+
+    let scale  = getScale(angle + flipAngle, image.width, image.height);
+    let width  = image.width * scale;
+    let height = image.height * scale;
+
+    wheel.style.transform = `translateZ(0) translateY(-50%) rotate(${angle}rad)`;
+
+    context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+    context.save();
+    context.translate(context.canvas.width / 2, context.canvas.height / 2);
+    context.rotate(angle + flipAngle);
+    croppy.render(state, {x: -width / 2, y: -height / 2}, width, height);
+    context.restore();
+
+    if (state.rotating) raf(update, store.getState());
   }
 
   window.flip = flip;

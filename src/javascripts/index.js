@@ -2,7 +2,6 @@
 
 import events from "events";
 import Canvas from "./canvas";
-import * as store from "./store";
 import {plugins} from "./plugins/index";
 import { readFile, loadImage, aspectRatio, checkElement} from "./utils";
 
@@ -58,10 +57,10 @@ export class Croppy extends events.EventEmitter {
     let ar = aspectRatio(image);
 
     let el = document.createElement("canvas");
-    let st = store.createStore({
+    let st = {
       image,
       context: el.getContext("2d")
-    });
+    };
 
     el.width = image.width  = element.offsetWidth;
     el.height = image.height = Math.round(image.width * ar)
@@ -69,7 +68,7 @@ export class Croppy extends events.EventEmitter {
     element.appendChild(el);
 
     plugins.forEach(plugin => plugin(st, this));
-    this.render(st.getState());
+    this.render(st);
 
   }
 
