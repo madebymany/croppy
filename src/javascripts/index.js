@@ -1,7 +1,6 @@
 'use strict';
 
 import events from "events";
-import Canvas from "./canvas";
 import {plugins} from "./plugins/index";
 import { readFile, loadImage, aspectRatio, checkElement} from "./utils";
 

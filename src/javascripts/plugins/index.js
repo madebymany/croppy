@@ -1,3 +1,3 @@
-import crop from './crop';
-import rotate from './rotate';
+import crop from './crop/index';
+import rotate from './rotate/index';
 export var plugins = [crop, rotate];

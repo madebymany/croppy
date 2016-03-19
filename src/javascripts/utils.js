@@ -43,3 +43,9 @@ export function checkElement(element) {
 export function raf(callback, ...args) {
   return requestAnimationFrame(t => callback(...args));
 };
+
+export function partiallyApply(callback, ...partialArgs) {
+  return (...remainingArgs) => {
+    return callback.apply(this, [...partialArgs, ...remainingArgs]);
+  };
+}
