@@ -27,11 +27,12 @@ export class Handle {
     context.restore();
   }
 
-  contains(mx, my) {
+  contains(mouse) {
     let x = this.x - this.offset.x;
     let y = this.y - this.offset.y
 
-    return (x <= mx) && (x + size >= mx) && (y <= my) && (y + size >= my);
+    return (x <= mouse.x) && (x + size >= mouse.x) &&
+           (y <= mouse.y) && (y + size >= mouse.y);
   }
 }
 

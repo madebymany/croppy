@@ -2,9 +2,9 @@
 
 const ANGLE_LIMIT = 45;
 
-export default function modifier(action, state) {
+export default function modifier({type, ...action}, state) {
 
-  switch (action.type) {
+  switch (type) {
     case "START_ROTATE":
       return Object.assign({}, state, {
         startPosition: state.angle - action.position,

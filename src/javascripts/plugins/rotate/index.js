@@ -18,6 +18,28 @@ function getScale(angle, width, height) {
   return Math.max((a + b) / width, (c + d) / height);
 };
 
+function update(state, wheel, croppy, store) {
+  let {context, image, angle, flipAngle} = state;
+
+  flipAngle = flipAngle * TO_RADIANS;
+  angle = angle * TO_RADIANS;
+
+  let scale  = getScale(angle + flipAngle, image.width, image.height);
+  let width  = image.width * scale;
+  let height = image.height * scale;
+
+  wheel.style.transform = `translateZ(0) translateY(-50%) rotate(${angle}rad)`;
+
+  context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+  context.save();
+  context.translate(context.canvas.width / 2, context.canvas.height / 2);
+  context.rotate(angle + flipAngle);
+  croppy.render(state, {x: -width / 2, y: -height / 2}, width, height);
+  context.restore();
+
+  if (state.rotating) raf(update, store.getState(), wheel, croppy, store);
+}
+
 export default function rotate(appState, croppy) {
 
   const store = createStore(modifier, {
@@ -31,11 +53,11 @@ export default function rotate(appState, croppy) {
   const wheel = createWheel(appState.context.canvas, store);
 
   store.on("START_ROTATE", function(action, state, oldState) {
-    raf(update, state);
+    raf(update, state, wheel, croppy, store);
   });
 
   store.on("FLIP", (action, state, oldState) => {
-    update(state);
+    update(state, wheel, croppy, store);
   });
 
   function flip(angle) {
@@ -43,28 +65,6 @@ export default function rotate(appState, croppy) {
       type: "FLIP",
       angle
     });
-  }
-
-  function update(state) {
-    let {context, image, angle, flipAngle} = state;
-
-    flipAngle = flipAngle * TO_RADIANS;
-    angle = angle * TO_RADIANS;
-
-    let scale  = getScale(angle + flipAngle, image.width, image.height);
-    let width  = image.width * scale;
-    let height = image.height * scale;
-
-    wheel.style.transform = `translateZ(0) translateY(-50%) rotate(${angle}rad)`;
-
-    context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-    context.save();
-    context.translate(context.canvas.width / 2, context.canvas.height / 2);
-    context.rotate(angle + flipAngle);
-    croppy.render(state, {x: -width / 2, y: -height / 2}, width, height);
-    context.restore();
-
-    if (state.rotating) raf(update, store.getState());
   }
 
   window.flip = flip;
