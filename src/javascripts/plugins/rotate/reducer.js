@@ -1,10 +1,16 @@
 "use strict";
 
 const ANGLE_LIMIT = 45;
+const initialState = {
+  startPosition: 0,
+  angle: 0,
+  flipAngle: 0,
+  rotating: false
+};
 
-export default function modifier({type, ...action}, state) {
+export default function reducer(state = initialState, action) {
 
-  switch (type) {
+  switch (action.type) {
     case "START_ROTATE":
       return Object.assign({}, state, {
         startPosition: state.angle - action.position,

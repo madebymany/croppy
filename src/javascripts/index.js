@@ -1,8 +1,8 @@
 'use strict';
 
-import events from "events";
-import {plugins} from "./plugins/index";
 import { readFile, loadImage, aspectRatio, checkElement} from "./utils";
+import { createStore, combineReducers, compose } from "redux";
+import plugins from "./plugins/index";
 
 const privateMap = new WeakMap();
 
@@ -16,11 +16,9 @@ const privateMap = new WeakMap();
 //};
 // }}}
 
-export class Croppy extends events.EventEmitter {
+export class Croppy {
 
   constructor(image, element) {
-
-    super();
 
     this.element = checkElement(element);
 
@@ -54,33 +52,48 @@ export class Croppy extends events.EventEmitter {
     image   = image.cloneNode();
 
     let ar = aspectRatio(image);
-
     let el = document.createElement("canvas");
-    let st = {
-      image,
-      context: el.getContext("2d")
-    };
 
     el.width = image.width  = element.offsetWidth;
     el.height = image.height = Math.round(image.width * ar)
 
     element.appendChild(el);
 
-    plugins.forEach(plugin => plugin(st, this));
-    this.render(st);
+    const reducers = plugins.reduce((memo, plugin) => {
+      let {name, reducer, main} = plugin;
 
+      if (!name || !reducer || !main) {
+        console.warn(`Methods missing for ${name}. Plugin not loaded`);
+        return memo;
+      }
+
+      memo[name] = reducer;
+      return memo;
+    }, {});
+
+    const store = createStore(combineReducers(reducers));
+    const context = el.getContext("2d");
+
+    const renderers = plugins.map((plugin) => {
+      return plugin.main(store, image, context);
+    });
+
+    this.renderers = compose(...renderers);
+
+    this.render(store.getState(), image, context);
   }
 
-  render(state, position = {x:0, y:0}, width, height) {
-    state.context.globalCompositeOperation = 'destination-over';
-    state.context.drawImage(
-      state.image,
-      position.x,
-      position.y,
-      width || state.image.width,
-      height || state.image.height
+  render(state, image, context) {
+    this.renderers(state, image, context);
+    context.globalCompositeOperation = 'destination-over';
+    context.drawImage(
+      image,
+      0,
+      0,
+      image.width,
+      image.height
     );
-    state.context.globalCompositeOperation = 'source-over';
+    context.globalCompositeOperation = 'source-over';
   }
 
 

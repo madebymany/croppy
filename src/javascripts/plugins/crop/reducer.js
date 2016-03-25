@@ -1,5 +1,13 @@
 "use strict";
 
+const initialState = {
+  startPosition: { x:0, y:0 },
+  selectedHandle: -1,
+  interaction: "",
+  cropArea: [0, 0, 0, 0],
+  handles: []
+};
+
 function fitWithinBounds(state, [x, y, w, h]) {
   const {width, height} = state.context.canvas;
 
@@ -89,9 +97,13 @@ function insideCropArea(state, position) {
           (y <= position.y) && (y + height >= position.y));
 }
 
-export default function modifier ({type, ...action}, state) {
+export default function reducer(state = initialState, action) {
 
-  switch (type) {
+  switch (action.type) {
+    case "@@CROP/INIT":
+      let {type, ...rest} = action;
+      return Object.assign({}, state, rest);
+
     case "START_MOVE":
       const selectedHandle = findHandleIndex(state, action.position);
       const interaction =
