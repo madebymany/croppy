@@ -40,6 +40,17 @@ export function checkElement(element) {
   return element;
 };
 
+export function getScale(angle, width, height) {
+  let radians = Math.abs(angle);
+
+  let a = Math.abs(height * Math.sin(radians));
+  let b = Math.abs(width * Math.cos(radians));
+  let c = Math.abs(width * Math.sin(radians));
+  let d = Math.abs(height * Math.cos(radians));
+
+  return Math.max((a + b) / width, (c + d) / height);
+};
+
 export function raf(callback, ...args) {
   return requestAnimationFrame(t => callback(...args));
 };

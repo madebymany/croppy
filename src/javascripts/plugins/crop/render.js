@@ -1,39 +1,6 @@
 "use strict";
 
-import createStore from "redux";
-import reducer from "./reducer";
-import { Handle, handleOffsets } from "./handle";
-import { raf, partiallyApply } from "../../utils";
-
-var EVENTS = {
-  selectstart, mousedown, mousemove,
-  mouseup, mouseout: mouseup
-};
-
-function selectstart(store, e) {
-  e.preventDefault();
-  return false;
-}
-
-function mousedown(store, e) {
-  store.dispatch({
-    type: "START_MOVE",
-    position: { x: e.layerX, y: e.layerY }
-  });
-}
-
-function mousemove(store, e) {
-  store.dispatch({
-    type: "MOVE",
-    position: {x: e.layerX, y: e.layerY}
-  });
-}
-
-function mouseup(store) {
-  store.dispatch({type: "STOP_MOVE"});
-}
-
-function update(...args) {
+export default function render(...args) {
   renderOverlay(...args);
   renderHandles(...args);
   renderGrid(...args);
@@ -43,12 +10,12 @@ function update(...args) {
 
 function renderHandles(state, image, context) {
 
-  let {cropArea, handles} = state.crop;
+  let {cropArea, handles} = state;
 
   // 0  1  2
   // 7     3
   // 6  5  4
-  const [x1, y1, width, height] = state.crop.cropArea;
+  const [x1, y1, width, height] = state.cropArea;
   const hw = width/2 + x1;
   const hh = height/2 + y1;
   const w  = width + x1;
@@ -74,7 +41,7 @@ function renderHandles(state, image, context) {
 }
 
 function renderGrid(state, image, context) {
-  let [x, y, w, h] = state.crop.cropArea;
+  let [x, y, w, h] = state.cropArea;
 
   let h1 = (w / 3);
   let h2 = h1*2 + x;
@@ -110,30 +77,9 @@ function renderOverlay(state, image, context) {
   context.fillRect(0, 0, width, height);
 
   context.beginPath();
-  context.rect(...state.crop.cropArea);
+  context.rect(...state.cropArea);
   context.clip()
-  context.clearRect(...state.crop.cropArea);
+  context.clearRect(...state.cropArea);
   context.restore();
 }
 
-export default function crop(store, image, context) {
-
-  store.dispatch({
-    type: '@@CROP/INIT',
-    cropArea: [0, 0, image.width, image.height],
-    handles: handleOffsets.map(offset => new Handle(offset))
-  })
-
-  //store.on("START_MOVE", (action, state, oldState) => {
-    //raf(update, state, croppy, store);
-  //});
-
-  Object.keys(EVENTS).forEach(function(event){
-    context.canvas.addEventListener(
-      event, partiallyApply(EVENTS[event], store), true
-    );
-  });
-
-  return update;
-
-}
